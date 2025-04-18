@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alien Shooter</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: black;
+      touch-action: none;
+    }
+    canvas {
+      display: block;
+    }
+    #startBtn, #restartBtn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px 40px;
+      font-size: 24px;
+      background: lime;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      z-index: 1;
+    }
+    #restartBtn {
+      display: none;
+      background: red;
+      color: white;
+      top: 60%;
+    }
+    #gameOver {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: red;
+      font-size: 36px;
+      font-weight: bold;
+      display: none;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameOver">GAME OVER</div>
+  <button id="startBtn">Start Game</button>
+  <button id="restartBtn">Restart</button>
+  <canvas id="gameCanvas"></canvas>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const gameOverText = document.getElementById('gameOver');
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+
+    let player, bullets, enemies, score, level, enemySpeed, enemiesToNextLevel, boss, bossActive;
+    let shootSound, explosionSound;
+    let isRunning = false;
+    let highScore = localStorage.getItem('highScore') || 0;
+
+    function loadSounds() {
+      shootSound = new Audio('https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg');
+      explosionSound = new Audio('https://actions.google.com/sounds/v1/explosions/explosion.ogg');
+    }
+
+    function init() {
+      player = { x: width / 2, y: height - 80, size: 40 };
+      bullets = [];
+      enemies = [];
+      score = 0;
+      level = 1;
+      enemySpeed = 2;
+      enemiesToNextLevel = 10;
+      boss = null;
+      bossActive = false;
+      isRunning = true;
+      gameOverText.style.display = 'none';
+      restartBtn.style.display = 'none';
+      spawnEnemies();
+      animate();
+    }
+
+    function drawPlayer() {
+      ctx.fillStyle = 'cyan';
+      ctx.beginPath();
+      ctx.moveTo(player.x, player.y);
+      ctx.lineTo(player.x - player.size, player.y + player.size);
+      ctx.lineTo(player.x + player.size, player.y + player.size);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawBullets() {
+      ctx.fillStyle = 'yellow';
+      bullets.forEach(bullet => {
+        ctx.fillRect(bullet.x - 2, bullet.y, 4, 10);
+      });
+    }
+
+    function drawEnemies() {
+      ctx.fillStyle = 'red';
+      enemies.forEach(enemy => {
+        ctx.beginPath();
+        ctx.arc(enemy.x, enemy.y, 20, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function drawBoss() {
+      if (bossActive && boss) {
+        ctx.fillStyle = 'purple';
+        ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
+        ctx.fillStyle = 'white';
+        ctx.font = '16px Arial';
+        ctx.fillText('Boss HP: ' + boss.hp, boss.x, boss.y - 10);
+      }
+    }
+
+    function updateBullets() {
+      bullets = bullets.filter(bullet => bullet.y > 0);
+      bullets.forEach(bullet => bullet.y -= 10);
+    }
+
+    function updateEnemies() {
+      if (!bossActive) {
+        enemies.forEach(enemy => enemy.y += enemySpeed);
+      }
+    }
+
+    function spawnEnemies() {
+      setInterval(() => {
+        if (isRunning && !bossActive) {
+          enemies.push({ x: Math.random() * width, y: -20 });
+        }
+      }, 1000);
+    }
+
+    function spawnBoss() {
+      boss = {
+        x: width / 2 - 60,
+        y: 50,
+        width: 120,
+        height: 60,
+        hp: 20 + level * 5
+      };
+      bossActive = true;
+    }
+
+    function gameOver() {
+      isRunning = false;
+      gameOverText.style.display = 'block';
+      restartBtn.style.display = 'block';
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('highScore', highScore);
+      }
+    }
+
+    function detectCollisions() {
+      bullets.forEach((bullet, bIdx) => {
+        if (bossActive && boss) {
+          if (
+            bullet.x > boss.x && bullet.x < boss.x + boss.width &&
+            bullet.y > boss.y && bullet.y < boss.y + boss.height
+          ) {
+            boss.hp--;
+            bullets.splice(bIdx, 1);
+            if (boss.hp <= 0) {
+              explosionSound.play();
+              boss = null;
+              bossActive = false;
+              level++;
+              enemySpeed += 1;
+              enemiesToNextLevel = 10 + level * 2;
+            }
+            return;
+          }
+        }
+        enemies.forEach((enemy, eIdx) => {
+          if (Math.hypot(enemy.x - bullet.x, enemy.y - bullet.y) < 20) {
+            explosionSound.play();
+            enemies.splice(eIdx, 1);
+            bullets.splice(bIdx, 1);
+            score++;
+            enemiesToNextLevel--;
+            if (enemiesToNextLevel <= 0 && !bossActive) {
+              spawnBoss();
+            }
+          }
+        });
+      });
+
+      enemies.forEach(enemy => {
+        if (Math.hypot(enemy.x - player.x, enemy.y - player.y) < 30) {
+          gameOver();
+        }
+      });
+
+      if (bossActive && boss) {
+        if (
+          player.x + player.size > boss.x && player.x - player.size < boss.x + boss.width &&
+          player.y + player.size > boss.y && player.y < boss.y + boss.height
+        ) {
+          gameOver();
+        }
+      }
+    }
+
+    function animate() {
+      if (!isRunning) return;
+      ctx.clearRect(0, 0, width, height);
+      drawPlayer();
+      drawBullets();
+      drawEnemies();
+      drawBoss();
+      updateBullets();
+      updateEnemies();
+      detectCollisions();
+
+      ctx.fillStyle = 'white';
+      ctx.font = '24px Arial';
+      ctx.fillText('Score: ' + score, 10, 30);
+      ctx.fillText('Level: ' + level, 10, 60);
+      ctx.fillText('High Score: ' + highScore, 10, 90);
+
+      requestAnimationFrame(animate);
+    }
+
+    function shoot() {
+      if (!isRunning) return;
+      shootSound.play();
+      bullets.push({ x: player.x, y: player.y });
+    }
+
+    canvas.addEventListener('touchstart', shoot);
+    window.addEventListener('deviceorientation', (e) => {
+      if (!isRunning) return;
+      if (e.gamma) {
+        player.x += e.gamma;
+        if (player.x < 20) player.x = 20;
+        if (player.x > width - 20) player.x = width - 20;
+      }
+    });
+
+    startBtn.addEventListener('click', () => {
+      startBtn.style.display = 'none';
+      loadSounds();
+      init();
+    });
+
+    restartBtn.addEventListener('click', () => {
+      restartBtn.style.display = 'none';
+      loadSounds();
+      init();
+    });
+  </script>
+</body>
+</html>
