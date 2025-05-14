@@ -475,8 +475,12 @@
             debug("Auto save: " + (settings.autoSave ? "ON" : "OFF"));
             vibrate(20); // Give feedback when toggled
         }
+
+        document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("shareScoreBtn")?.addEventListener("click", handleShareClick);
+});
         
-document.getElementById("shareScoreBtn")?.addEventListener("click", handleShareClick);       
+// document.getElementById("shareScoreBtn")?.addEventListener("click", handleShareClick);       
 
 // 1. Define the share logic once
 function handleShareClick() {
