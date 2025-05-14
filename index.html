@@ -266,8 +266,17 @@
         <h2>Game Over</h2>
         <p>Your score: <span id="finalScore">0</span></p>
         <div id="restartBtn">Play Again</div>
-        <div id="shareScoreBtn" style="background-color: #1DA1F2; border: none; color: white; padding: 15px 30px; text-align: center; text-decoration: none; display: inline-block; font-size: 18px; margin-top: 15px; cursor: pointer; border-radius: 5px;">Share Score</div>
-    </div>
+<div 
+  class="bg-slate-800 rounded-full w-10 h-10 flex items-center justify-center fixed bottom-4 right-4 z-50 cursor-pointer"
+  id="shareScoreBtn"
+  role="button"
+  tabindex="0"
+  aria-label="Share your score"
+>
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 12h9m0 0l-3.75 3.75M16.5 12l-3.75-3.75M18.75 5.25h.75A2.25 2.25 0 0 1 21.75 7.5v9a2.25 2.25 0 0 1-2.25 2.25h-.75m-12-13.5H6A2.25 2.25 0 0 0 3.75 7.5v9A2.25 2.25 0 0 0 6 18.75h.75" />
+  </svg>
+</div>    </div>
     
     <div id="highScores">
         <h2>High Scores</h2>
