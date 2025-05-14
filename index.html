@@ -203,49 +203,35 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
         
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        }
-        
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+        /* Simple toggle button style */
+        .toggle-btn {
+            width: 60px;
+            height: 30px;
             background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
+            border-radius: 15px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s;
         }
         
-        .slider:before {
+        .toggle-btn:after {
+            content: '';
             position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
+            background-color: white;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
         }
         
-        input:checked + .slider {
+        .toggle-btn.active {
             background-color: #4CAF50;
         }
         
-        input:checked + .slider:before {
-            transform: translateX(26px);
+        .toggle-btn.active:after {
+            left: 32px;
         }
         
         #closeSettings {
@@ -260,36 +246,6 @@
             margin-top: 15px;
             cursor: pointer;
             border-radius: 5px;
-        }
-        
-        /* Custom toggle buttons */
-        .toggle-btn {
-            background-color: #ccc;
-            width: 50px;
-            height: 24px;
-            border-radius: 24px;
-            position: relative;
-            cursor: pointer;
-        }
-        
-        .toggle-btn.active {
-            background-color: #4CAF50;
-        }
-        
-        .toggle-btn:before {
-            content: "";
-            position: absolute;
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            border-radius: 50%;
-            transition: .4s;
-        }
-        
-        .toggle-btn.active:before {
-            transform: translateX(26px);
         }
     </style>
 </head>
@@ -460,11 +416,13 @@
             resumeGame();
         }
         
+        // Simplified toggle functions
         function toggleHaptic() {
             settings.hapticFeedback = !settings.hapticFeedback;
             hapticToggleBtn.classList.toggle('active', settings.hapticFeedback);
             saveSettings();
             debug("Haptic feedback: " + (settings.hapticFeedback ? "ON" : "OFF"));
+            vibrate(20); // Give feedback when toggled
         }
         
         function toggleAutoSave() {
@@ -472,6 +430,7 @@
             autoSaveToggleBtn.classList.toggle('active', settings.autoSave);
             saveSettings();
             debug("Auto save: " + (settings.autoSave ? "ON" : "OFF"));
+            vibrate(20); // Give feedback when toggled
         }
         
         function shareScore() {
@@ -753,6 +712,10 @@
         document.addEventListener('touchstart', handleTouchStart, { passive: false });
         document.addEventListener('touchend', handleTouchEnd, { passive: false });
         
+        // Add direct event listeners for toggle buttons
+        hapticToggleBtn.addEventListener('click', toggleHaptic);
+        autoSaveToggleBtn.addEventListener('click', toggleAutoSave);
+        
         // Add click event listeners for desktop
         settingsBtn.addEventListener('click', openSettings);
         highScoreBtn.addEventListener('click', openHighScores);
@@ -760,38 +723,6 @@
         closeScores.addEventListener('click', closeHighScoresPanel);
         restartBtn.addEventListener('click', restartGame);
         shareScoreBtn.addEventListener('click', shareScore);
-        hapticToggleBtn.addEventListener('click', toggleHaptic);
-        autoSaveToggleBtn.addEventListener('click', toggleAutoSave);
-        
-        // Add event listeners for menu buttons
-        function addButtonListeners(button, action) {
-            // Check if button exists
-            if (!button) return;
-            
-            // Add click event for desktop
-            button.addEventListener('click', function(e) {
-                debug(button.id + " clicked");
-                action();
-            });
-            
-            // Add touchstart event for mobile
-            button.addEventListener('touchstart', function(e) {
-                e.preventDefault();
-                debug(button.id + " touched");
-                vibrate(20); // Give haptic feedback
-                action();
-            }, { passive: false });
-        }
-        
-        // Add listeners to all buttons
-        addButtonListeners(settingsBtn, openSettings);
-        addButtonListeners(highScoreBtn, openHighScores);
-        addButtonListeners(closeScores, closeHighScoresPanel);
-        addButtonListeners(closeSettings, closeSettingsPanel);
-        addButtonListeners(restartBtn, restartGame);
-        addButtonListeners(shareScoreBtn, shareScore);
-        addButtonListeners(hapticToggleBtn, toggleHaptic);
-        addButtonListeners(autoSaveToggleBtn, toggleAutoSave);
         
         // For testing on desktop
         window.addEventListener('keydown', (e) => {
