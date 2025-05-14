@@ -440,41 +440,28 @@
             
             try {
                 if (navigator.share) {
-                    // Create a completely new button to ensure a fresh user gesture
-                    const oldShareButton = document.getElementById('shareScoreBtn');
-                    const newShareButton = document.createElement('div');
+                    // Store the share data instead of immediately calling share()
+                    const shareData = {
+                        title: 'Space Shooter Score',
+                        text: text,
+                        url: url
+                    };
                     
-                    // Copy all attributes and styles from the old button
-                    newShareButton.id = 'shareScoreBtn';
-                    newShareButton.innerHTML = oldShareButton.innerHTML;
-                    newShareButton.style.cssText = oldShareButton.style.cssText;
-                    newShareButton.className = oldShareButton.className;
-                    
-                    // Add a fresh event listener to the new button
-                    newShareButton.addEventListener('click', function(e) {
-                        debug("Fresh share button clicked");
-                        // This is a direct user gesture on a fresh element
-                        navigator.share({
-                            title: 'Space Shooter Score',
-                            text: text,
-                            url: url
-                        }).catch(error => {
-                            debug("Error sharing: " + error);
-                            if (error.name === 'AbortError') {
-                                debug("User canceled sharing");
-                                // We'll recreate the button on next click
-                            } else {
-                                alert("Sharing failed. Your score: " + score);
-                            }
-                        });
-                    });
-                    
-                    // Replace the old button with the new one
-                    oldShareButton.parentNode.replaceChild(newShareButton, oldShareButton);
-                    
-                    // Show a message to click the button again
-                    debug("Share button refreshed - click again to share");
-                    alert("Please tap 'Share Score' again to share your score.");
+                    // Use setTimeout with 0 delay to ensure we're in a fresh event loop
+                    // This helps maintain the connection to the user gesture
+                    setTimeout(() => {
+                        navigator.share(shareData)
+                            .catch(error => {
+                                debug("Error sharing: " + error);
+                                if (error.name === 'AbortError') {
+                                    // User canceled, do nothing special
+                                    debug("User canceled sharing");
+                                } else {
+                                    // Other errors, show fallback
+                                    alert("Sharing failed. Your score: " + score);
+                                }
+                            });
+                    }, 0);
                 } else {
                     // Fallback for browsers that don't support Web Share API
                     debug("Web Share API not supported, using fallback");
@@ -748,7 +735,10 @@
         closeSettings.addEventListener('click', closeSettingsPanel);
         closeScores.addEventListener('click', closeHighScoresPanel);
         restartBtn.addEventListener('click', restartGame);
-        shareScoreBtn.addEventListener('click', shareScore);
+        shareScoreBtn.addEventListener('click', function(e) {
+            // Direct connection to user gesture
+            shareScore();
+        });
         
         // For testing on desktop
         window.addEventListener('keydown', (e) => {
