@@ -1,7 +1,7 @@
 {
   "name": "Space Shooter",
   "short_name": "SpaceShooter",
-  "description": "A mobile HTML5 space shooting game",
+  "description": "A space shooting game",
   "start_url": "/",
   "display": "fullscreen",
   "background_color": "#000022",
