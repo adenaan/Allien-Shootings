@@ -696,7 +696,7 @@ shareScoreBtn.addEventListener("keydown", (e) => {
             } else if (element === restartBtn) {
                 restartGame();
             } else if (element === shareScoreBtn) {
-                shareScore();
+                handleShareClick();
             } else if (element === hapticToggleBtn) {
                 toggleHaptic();
             } else if (element === autoSaveToggleBtn) {
@@ -741,7 +741,7 @@ shareScoreBtn.addEventListener("keydown", (e) => {
         restartBtn.addEventListener('click', restartGame);
         shareScoreBtn.addEventListener('click', function(e) {
             // Direct connection to user gesture
-            shareScore();
+            handleShareClick();
         });
         
         // For testing on desktop
