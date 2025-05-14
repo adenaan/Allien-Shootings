@@ -50,6 +50,7 @@
             text-align: center;
             display: none;
             z-index: 20;
+            min-width: 300px;
         }
         
         #restartBtn {
@@ -280,6 +281,7 @@
         <h2>Game Over</h2>
         <p>Your score: <span id="finalScore">0</span></p>
         <div id="restartBtn">Play Again</div>
+        <div id="shareScoreBtn" style="background-color: #1DA1F2; border: none; color: white; padding: 15px 30px; text-align: center; text-decoration: none; display: inline-block; font-size: 18px; margin-top: 15px; cursor: pointer; border-radius: 5px;">Share Score</div>
     </div>
     
     <div id="highScores">
@@ -345,6 +347,7 @@
         const scoresList = document.getElementById('scoresList');
         const closeScores = document.getElementById('closeScores');
         const closeSettings = document.getElementById('closeSettings');
+        const shareScoreBtn = document.getElementById('shareScoreBtn');
         
         // Settings
         let settings = {
@@ -419,13 +422,8 @@
         
         function openHighScores() {
             debug("High scores opened");
-            // Dummy high scores
-            scoresList.innerHTML = '';
-            for (let i = 1; i <= 5; i++) {
-                const li = document.createElement('li');
-                li.textContent = `${i}. ${i * 100}`;
-                scoresList.appendChild(li);
-            }
+            // Display actual high scores
+            displayHighScores();
             highScoresPanel.style.display = 'block';
             pauseGame();
         }
@@ -764,9 +762,25 @@
         addButtonListeners(closeSettings, closeSettingsPanel);
         addButtonListeners(restartBtn, restartGame);
         
-        // Add change event listeners for toggles
+        // Add share score button listener
+        if (shareScoreBtn) {
+            addButtonListeners(shareScoreBtn, shareScore);
+        }
+        
+        // Add event listeners for toggles that work on both desktop and mobile
         hapticToggle.addEventListener('change', toggleHaptic);
+        hapticToggle.addEventListener('click', function() {
+            // Toggle the checked state manually
+            this.checked = !this.checked;
+            toggleHaptic();
+        });
+
         autoSaveToggle.addEventListener('change', toggleAutoSave);
+        autoSaveToggle.addEventListener('click', function() {
+            // Toggle the checked state manually
+            this.checked = !this.checked;
+            toggleAutoSave();
+        });
         
         // For testing on desktop
         window.addEventListener('keydown', (e) => {
