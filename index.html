@@ -476,7 +476,7 @@
             vibrate(20); // Give feedback when toggled
         }
         
-       
+document.getElementById("shareScoreBtn")?.addEventListener("click", handleShareClick);       
 
 // 1. Define the share logic once
 function handleShareClick() {
@@ -502,7 +502,7 @@ function handleShareClick() {
   }
 }
 
-document.getElementById("shareScoreBtn")?.addEventListener("click", handleShareClick);
+
        
         function pauseGame() {
             if (animationFrameId) {
