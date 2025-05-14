@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Space Shooter by Addie</title>
+    <title>Space Shooter</title>
     <style>
         * {
             margin: 0;
@@ -51,14 +51,17 @@
             background-color: #4CAF50;
             border: none;
             color: white;
-            padding: 10px 20px;
+            padding: 15px 30px;
             text-align: center;
             text-decoration: none;
             display: inline-block;
-            font-size: 16px;
-            margin-top: 15px;
+            font-size: 20px;
+            margin-top: 20px;
             cursor: pointer;
             border-radius: 5px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
         }
         
         #controls {
@@ -88,6 +91,16 @@
         #shootBtn {
             background-color: rgba(255, 0, 0, 0.3);
         }
+        
+        /* Debug element */
+        #debug {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            font-size: 12px;
+            z-index: 100;
+        }
     </style>
 </head>
 <body>
@@ -101,7 +114,7 @@
     <div id="gameOver">
         <h2>Game Over</h2>
         <p>Your score: <span id="finalScore">0</span></p>
-        <button id="restartBtn">Play Again</button>
+        <div id="restartBtn">Play Again</div>
     </div>
     
     <div id="controls">
@@ -109,8 +122,18 @@
         <div id="rightBtn" class="control-btn">→</div>
         <div id="shootBtn" class="control-btn">🔥</div>
     </div>
+    
+    <!-- Debug element -->
+    <div id="debug"></div>
 
     <script>
+        // Debug function
+        function debug(message) {
+            const debugElement = document.getElementById('debug');
+            debugElement.textContent = message;
+            console.log(message);
+        }
+        
         // Game variables
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -122,6 +145,8 @@
         const leftBtn = document.getElementById('leftBtn');
         const rightBtn = document.getElementById('rightBtn');
         const shootBtn = document.getElementById('shootBtn');
+        
+        debug("Game initialized");
         
         // Set canvas dimensions
         function resizeCanvas() {
@@ -139,6 +164,7 @@
         let enemySpawnRate = 1500; // milliseconds
         let lastEnemySpawn = 0;
         let lastFrameTime = 0;
+        let animationFrameId = null;
         
         // Player
         const player = {
@@ -172,6 +198,9 @@
                 player.isMovingRight = true;
             } else if (element === shootBtn) {
                 player.isShooting = true;
+            } else if (element === restartBtn) {
+                debug("Restart button touched");
+                restartGame();
             }
         }
         
@@ -202,11 +231,25 @@
         shootBtn.addEventListener('touchstart', handleTouchStart, { passive: false });
         document.addEventListener('touchend', handleTouchEnd, { passive: false });
         
+        // Add specific touch events for restart button
+        restartBtn.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            debug("Restart button touchstart");
+            restartGame();
+        }, { passive: false });
+        
+        // Also add click event for desktop testing
+        restartBtn.addEventListener('click', function(e) {
+            debug("Restart button clicked");
+            restartGame();
+        });
+        
         // For testing on desktop
         window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft') player.isMovingLeft = true;
             if (e.key === 'ArrowRight') player.isMovingRight = true;
             if (e.key === ' ') player.isShooting = true;
+            if (e.key === 'r') restartGame();
         });
         
         window.addEventListener('keyup', (e) => {
@@ -452,67 +495,110 @@
         }
         
         function gameOver() {
+            debug("Game over");
             gameActive = false;
             finalScoreElement.textContent = score;
             gameOverElement.style.display = 'block';
+            
+            // Cancel the animation frame to stop the game loop
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
         }
         
         function restartGame() {
-            gameActive = true;
-            score = 0;
-            lives = 3;
-            enemySpawnRate = 1500;
-            lastEnemySpawn = 0;
+            debug("Restart game called");
             
-            scoreElement.textContent = score;
-            livesElement.textContent = lives;
-            gameOverElement.style.display = 'none';
-            
-            player.x = canvas.width / 2;
-            player.y = canvas.height - 100;
-            
-            bullets.length = 0;
-            enemies.length = 0;
-            explosions.length = 0;
-            
-            requestAnimationFrame(gameLoop);
+            try {
+                // Cancel any existing animation frame
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+                
+                // Reset game state
+                gameActive = true;
+                score = 0;
+                lives = 3;
+                enemySpawnRate = 1500;
+                lastEnemySpawn = Date.now();
+                lastFrameTime = 0;
+                
+                // Update UI
+                scoreElement.textContent = score;
+                livesElement.textContent = lives;
+                gameOverElement.style.display = 'none';
+                
+                // Reset player position
+                player.x = canvas.width / 2;
+                player.y = canvas.height - 100;
+                
+                // Clear all game objects
+                bullets.length = 0;
+                enemies.length = 0;
+                explosions.length = 0;
+                
+                // Restart the game loop
+                startGame();
+                
+                debug("Game restarted successfully");
+            } catch (error) {
+                debug("Error in restart: " + error.message);
+            }
         }
         
-        restartBtn.addEventListener('click', restartGame);
-        
         function gameLoop(timestamp) {
-            if (!gameActive) return;
-            
-            // Calculate delta time
-            if (!lastFrameTime) lastFrameTime = timestamp;
-            const deltaTime = (timestamp - lastFrameTime) / 1000; // convert to seconds
-            lastFrameTime = timestamp;
-            
-            // Clear canvas
-            ctx.fillStyle = '#000022';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw stars
-            drawStars();
-            
-            // Update game objects
-            updatePlayer(deltaTime);
-            updateBullets(deltaTime);
-            updateEnemies(deltaTime);
-            updateExplosions(deltaTime);
-            
-            // Draw game objects
-            drawPlayer();
-            drawBullets();
-            drawEnemies();
-            drawExplosions();
-            
-            // Continue game loop
-            requestAnimationFrame(gameLoop);
+            try {
+                if (!gameActive) return;
+                
+                // Calculate delta time
+                if (!lastFrameTime) lastFrameTime = timestamp;
+                const deltaTime = Math.min((timestamp - lastFrameTime) / 1000, 0.1); // convert to seconds, cap at 0.1
+                lastFrameTime = timestamp;
+                
+                // Clear canvas
+                ctx.fillStyle = '#000022';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw stars
+                drawStars();
+                
+                // Update game objects
+                updatePlayer(deltaTime);
+                updateBullets(deltaTime);
+                updateEnemies(deltaTime);
+                updateExplosions(deltaTime);
+                
+                // Draw game objects
+                drawPlayer();
+                drawBullets();
+                drawEnemies();
+                drawExplosions();
+                
+                // Continue game loop
+                animationFrameId = requestAnimationFrame(gameLoop);
+            } catch (error) {
+                debug("Error in game loop: " + error.message);
+            }
+        }
+        
+        function startGame() {
+            try {
+                // Initialize game state
+                gameActive = true;
+                lastFrameTime = 0;
+                
+                // Start the game loop
+                animationFrameId = requestAnimationFrame(gameLoop);
+                debug("Game started");
+            } catch (error) {
+                debug("Error starting game: " + error.message);
+            }
         }
         
         // Start the game
-        requestAnimationFrame(gameLoop);
+        startGame();
     </script>
 </body>
 </html>
