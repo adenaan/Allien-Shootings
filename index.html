@@ -261,6 +261,36 @@
             cursor: pointer;
             border-radius: 5px;
         }
+        
+        /* Custom toggle buttons */
+        .toggle-btn {
+            background-color: #ccc;
+            width: 50px;
+            height: 24px;
+            border-radius: 24px;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .toggle-btn.active {
+            background-color: #4CAF50;
+        }
+        
+        .toggle-btn:before {
+            content: "";
+            position: absolute;
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            border-radius: 50%;
+            transition: .4s;
+        }
+        
+        .toggle-btn.active:before {
+            transform: translateX(26px);
+        }
     </style>
 </head>
 <body>
@@ -274,7 +304,6 @@
     <div id="gameMenu">
         <div id="settingsBtn" class="menu-btn">⚙️</div>
         <div id="highScoreBtn" class="menu-btn">🏆</div>
-        <div id="shareBtn" class="menu-btn">📤</div>
     </div>
     
     <div id="gameOver">
@@ -294,17 +323,11 @@
         <h2>Settings</h2>
         <div class="setting-item">
             <span>Haptic Feedback</span>
-            <label class="toggle-switch">
-                <input type="checkbox" id="hapticToggle" checked>
-                <span class="slider"></span>
-            </label>
+            <div id="hapticToggleBtn" class="toggle-btn active"></div>
         </div>
         <div class="setting-item">
             <span>Auto-Save</span>
-            <label class="toggle-switch">
-                <input type="checkbox" id="autoSaveToggle" checked>
-                <span class="slider"></span>
-            </label>
+            <div id="autoSaveToggleBtn" class="toggle-btn active"></div>
         </div>
         <div id="closeSettings">Close</div>
     </div>
@@ -339,15 +362,17 @@
         const shootBtn = document.getElementById('shootBtn');
         const settingsBtn = document.getElementById('settingsBtn');
         const highScoreBtn = document.getElementById('highScoreBtn');
-        const shareBtn = document.getElementById('shareBtn');
         const settingsPanel = document.getElementById('settingsPanel');
-        const hapticToggle = document.getElementById('hapticToggle');
-        const autoSaveToggle = document.getElementById('autoSaveToggle');
+        const hapticToggleBtn = document.getElementById('hapticToggleBtn');
+        const autoSaveToggleBtn = document.getElementById('autoSaveToggleBtn');
         const highScoresPanel = document.getElementById('highScores');
         const scoresList = document.getElementById('scoresList');
         const closeScores = document.getElementById('closeScores');
         const closeSettings = document.getElementById('closeSettings');
         const shareScoreBtn = document.getElementById('shareScoreBtn');
+        
+        // Get the height of the controls div for proper player positioning
+        const controlsHeight = document.getElementById('controls').offsetHeight;
         
         // Settings
         let settings = {
@@ -379,14 +404,15 @@
             // Reset player position when canvas is resized
             if (typeof player !== 'undefined') {
                 player.x = canvas.width / 2;
-                player.y = canvas.height - 100;
+                // Position player above controls
+                player.y = canvas.height - controlsHeight - 100;
             }
         }
 
-        // Player
+        // Player - position above controls
         const player = {
             x: canvas.width / 2,
-            y: canvas.height - 100,
+            y: canvas.height - controlsHeight - 100, // Position above controls
             width: 50,
             height: 50,
             speed: 300,
@@ -435,20 +461,44 @@
         }
         
         function toggleHaptic() {
-            settings.hapticFeedback = hapticToggle.checked;
+            settings.hapticFeedback = !settings.hapticFeedback;
+            hapticToggleBtn.classList.toggle('active', settings.hapticFeedback);
             saveSettings();
             debug("Haptic feedback: " + (settings.hapticFeedback ? "ON" : "OFF"));
         }
         
         function toggleAutoSave() {
-            settings.autoSave = autoSaveToggle.checked;
+            settings.autoSave = !settings.autoSave;
+            autoSaveToggleBtn.classList.toggle('active', settings.autoSave);
             saveSettings();
             debug("Auto save: " + (settings.autoSave ? "ON" : "OFF"));
         }
         
         function shareScore() {
-            debug("Share clicked");
-            alert("Score shared: " + score);
+            debug("Share score clicked");
+            const text = `I scored ${score} points in Space Shooter!`;
+            const url = window.location.href;
+            
+            try {
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Space Shooter Score',
+                        text: text,
+                        url: url
+                    }).catch(error => {
+                        debug("Error sharing: " + error);
+                        // Fallback if share fails
+                        alert("Sharing failed. Your score: " + score);
+                    });
+                } else {
+                    // Fallback for browsers that don't support Web Share API
+                    debug("Web Share API not supported, using fallback");
+                    alert("Sharing not supported on this browser. Your score: " + score);
+                }
+            } catch (error) {
+                debug("Error in share function: " + error.message);
+                alert("Share feature not available. Your score: " + score);
+            }
         }
         
         function pauseGame() {
@@ -527,7 +577,8 @@
                 
                 // Restore player position
                 player.x = gameState.player.x;
-                player.y = gameState.player.y;
+                // Always position player above controls
+                player.y = canvas.height - controlsHeight - 100;
                 
                 // Restore enemies
                 enemies.length = 0;
@@ -581,8 +632,8 @@
                     settings = { ...settings, ...parsedSettings };
                     
                     // Update UI
-                    hapticToggle.checked = settings.hapticFeedback;
-                    autoSaveToggle.checked = settings.autoSave;
+                    hapticToggleBtn.classList.toggle('active', settings.hapticFeedback);
+                    autoSaveToggleBtn.classList.toggle('active', settings.autoSave);
                 } catch (error) {
                     debug("Error loading settings: " + error.message);
                 }
@@ -646,34 +697,6 @@
             }
         }
         
-        // Share score
-        function shareScore() {
-            debug("Share score clicked");
-            const text = `I scored ${score} points in Space Shooter!`;
-            const url = window.location.href;
-            
-            try {
-                if (navigator.share) {
-                    navigator.share({
-                        title: 'Space Shooter Score',
-                        text: text,
-                        url: url
-                    }).catch(error => {
-                        debug("Error sharing: " + error);
-                        // Fallback if share fails
-                        alert("Sharing failed. Your score: " + score);
-                    });
-                } else {
-                    // Fallback for browsers that don't support Web Share API
-                    debug("Web Share API not supported, using fallback");
-                    alert("Sharing not supported on this browser. Your score: " + score);
-                }
-            } catch (error) {
-                debug("Error in share function: " + error.message);
-                alert("Share feature not available. Your score: " + score);
-            }
-        }
-        
         // Control handlers
         function handleTouchStart(e) {
             e.preventDefault();
@@ -690,14 +713,18 @@
                 openSettings();
             } else if (element === highScoreBtn) {
                 openHighScores();
-            } else if (element === shareBtn) {
-                shareScore();
             } else if (element === closeSettings) {
                 closeSettingsPanel();
             } else if (element === closeScores) {
                 closeHighScoresPanel();
             } else if (element === restartBtn) {
                 restartGame();
+            } else if (element === shareScoreBtn) {
+                shareScore();
+            } else if (element === hapticToggleBtn) {
+                toggleHaptic();
+            } else if (element === autoSaveToggleBtn) {
+                toggleAutoSave();
             }
         }
         
@@ -729,10 +756,12 @@
         // Add click event listeners for desktop
         settingsBtn.addEventListener('click', openSettings);
         highScoreBtn.addEventListener('click', openHighScores);
-        shareBtn.addEventListener('click', shareScore);
         closeSettings.addEventListener('click', closeSettingsPanel);
         closeScores.addEventListener('click', closeHighScoresPanel);
         restartBtn.addEventListener('click', restartGame);
+        shareScoreBtn.addEventListener('click', shareScore);
+        hapticToggleBtn.addEventListener('click', toggleHaptic);
+        autoSaveToggleBtn.addEventListener('click', toggleAutoSave);
         
         // Add event listeners for menu buttons
         function addButtonListeners(button, action) {
@@ -757,30 +786,12 @@
         // Add listeners to all buttons
         addButtonListeners(settingsBtn, openSettings);
         addButtonListeners(highScoreBtn, openHighScores);
-        addButtonListeners(shareBtn, shareScore);
         addButtonListeners(closeScores, closeHighScoresPanel);
         addButtonListeners(closeSettings, closeSettingsPanel);
         addButtonListeners(restartBtn, restartGame);
-        
-        // Add share score button listener
-        if (shareScoreBtn) {
-            addButtonListeners(shareScoreBtn, shareScore);
-        }
-        
-        // Add event listeners for toggles that work on both desktop and mobile
-        hapticToggle.addEventListener('change', toggleHaptic);
-        hapticToggle.addEventListener('click', function() {
-            // Toggle the checked state manually
-            this.checked = !this.checked;
-            toggleHaptic();
-        });
-
-        autoSaveToggle.addEventListener('change', toggleAutoSave);
-        autoSaveToggle.addEventListener('click', function() {
-            // Toggle the checked state manually
-            this.checked = !this.checked;
-            toggleAutoSave();
-        });
+        addButtonListeners(shareScoreBtn, shareScore);
+        addButtonListeners(hapticToggleBtn, toggleHaptic);
+        addButtonListeners(autoSaveToggleBtn, toggleAutoSave);
         
         // For testing on desktop
         window.addEventListener('keydown', (e) => {
@@ -1087,9 +1098,9 @@
                 livesElement.textContent = lives;
                 gameOverElement.style.display = 'none';
                 
-                // Reset player position
+                // Reset player position - always above controls
                 player.x = canvas.width / 2;
-                player.y = canvas.height - 180;
+                player.y = canvas.height - controlsHeight - 100;
                 
                 // Clear all game objects
                 bullets.length = 0;
