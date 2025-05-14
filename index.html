@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Space Shooter</title>
+    <link rel="manifest" href="manifest.json">
     <style>
         * {
             margin: 0;
@@ -73,7 +74,7 @@
             justify-content: space-between;
             padding: 0 20px;
             z-index: 10;
-            background-color: rgba(0, 0, 0, 0.3); /* Added semi-transparent background */
+            background-color: rgba(0, 0, 0, 0.3);
             padding-top: 10px;
             padding-bottom: 10px;
         }
@@ -104,6 +105,186 @@
             font-size: 12px;
             z-index: 100;
         }
+        
+        /* Game menu */
+        #gameMenu {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .menu-btn {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 2px solid white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            color: white;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        /* High scores panel */
+        #highScores {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            z-index: 20;
+            min-width: 300px;
+        }
+        
+        #highScores h2 {
+            margin-bottom: 15px;
+        }
+        
+        #scoresList {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+        
+        #scoresList li {
+            padding: 5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        #closeScores {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin-top: 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        
+        /* Share buttons */
+        .share-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .share-btn {
+            background-color: #4267B2;
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        
+        #twitterShare {
+            background-color: #1DA1F2;
+        }
+        
+        #webShare {
+            background-color: #9147FF;
+        }
+        
+        /* Settings for haptic feedback */
+        #settingsPanel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            z-index: 20;
+            min-width: 300px;
+        }
+        
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #4CAF50;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        #closeSettings {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin-top: 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -114,10 +295,44 @@
         <div>Lives: <span id="lives">3</span></div>
     </div>
     
+    <div id="gameMenu">
+        <button id="settingsBtn" class="menu-btn" onclick="openSettings()">⚙️</button>
+        <button id="highScoreBtn" class="menu-btn" onclick="openHighScores()">🏆</button>
+        <button id="shareBtn" class="menu-btn" onclick="shareScore()">📤</button>
+    </div>
+    
     <div id="gameOver">
         <h2>Game Over</h2>
         <p>Your score: <span id="finalScore">0</span></p>
-        <div id="restartBtn">Play Again</div>
+        <div id="restartBtn" onclick="restartGame()">Play Again</div>
+        <div class="share-buttons">
+            <button id="webShare" class="share-btn" onclick="shareScore()">Share Score</button>
+        </div>
+    </div>
+    
+    <div id="highScores">
+        <h2>High Scores</h2>
+        <ul id="scoresList"></ul>
+        <button id="closeScores" onclick="closeHighScores()">Close</button>
+    </div>
+    
+    <div id="settingsPanel">
+        <h2>Settings</h2>
+        <div class="setting-item">
+            <span>Haptic Feedback</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="hapticToggle" checked onclick="toggleHaptic()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="setting-item">
+            <span>Auto-Save</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="autoSaveToggle" checked onclick="toggleAutoSave()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <button id="closeSettings" onclick="closeSettings()">Close</button>
     </div>
     
     <div id="controls">
@@ -148,6 +363,35 @@
         const leftBtn = document.getElementById('leftBtn');
         const rightBtn = document.getElementById('rightBtn');
         const shootBtn = document.getElementById('shootBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const highScoreBtn = document.getElementById('highScoreBtn');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const hapticToggle = document.getElementById('hapticToggle');
+        const autoSaveToggle = document.getElementById('autoSaveToggle');
+        const highScoresPanel = document.getElementById('highScores');
+        const scoresList = document.getElementById('scoresList');
+        const closeScores = document.getElementById('closeScores');
+        const webShareBtn = document.getElementById('webShare');
+        
+        // Settings
+        let settings = {
+            hapticFeedback: true,
+            autoSave: true
+        };
+        
+        // High scores
+        let highScores = [];
+        
+        // Game state
+        let gameActive = true;
+        let score = 0;
+        let lives = 3;
+        let enemySpawnRate = 1500; // milliseconds
+        let lastEnemySpawn = 0;
+        let lastFrameTime = 0;
+        let animationFrameId = null;
+        let lastSaveTime = 0;
+        const saveInterval = 10000; // Save every 10 seconds
         
         debug("Game initialized");
         
@@ -160,19 +404,10 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
         
-        // Game state
-        let gameActive = true;
-        let score = 0;
-        let lives = 3;
-        let enemySpawnRate = 1500; // milliseconds
-        let lastEnemySpawn = 0;
-        let lastFrameTime = 0;
-        let animationFrameId = null;
-        
         // Player
         const player = {
             x: canvas.width / 2,
-            y: canvas.height - 180, // Changed from canvas.height - 100 to move ship higher
+            y: canvas.height - 180,
             width: 50,
             height: 50,
             speed: 300,
@@ -189,6 +424,280 @@
         const enemies = [];
         const explosions = [];
         
+        // UI Functions
+        function openSettings() {
+            debug("Opening settings");
+            settingsPanel.style.display = 'block';
+            // Pause game when settings are open
+            if (gameActive) {
+                pauseGame();
+            }
+        }
+        
+        function closeSettings() {
+            debug("Closing settings");
+            settingsPanel.style.display = 'none';
+            saveSettings();
+            // Resume game if it was active
+            if (gameActive) {
+                resumeGame();
+            }
+        }
+        
+        function openHighScores() {
+            debug("Opening high scores");
+            displayHighScores();
+            highScoresPanel.style.display = 'block';
+            // Pause game when high scores are open
+            if (gameActive) {
+                pauseGame();
+            }
+        }
+        
+        function closeHighScores() {
+            debug("Closing high scores");
+            highScoresPanel.style.display = 'none';
+            // Resume game if it was active
+            if (gameActive) {
+                resumeGame();
+            }
+        }
+        
+        function toggleHaptic() {
+            settings.hapticFeedback = hapticToggle.checked;
+            saveSettings();
+            debug("Haptic feedback: " + (settings.hapticFeedback ? "ON" : "OFF"));
+        }
+        
+        function toggleAutoSave() {
+            settings.autoSave = autoSaveToggle.checked;
+            saveSettings();
+            debug("Auto save: " + (settings.autoSave ? "ON" : "OFF"));
+        }
+        
+        function pauseGame() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+        }
+        
+        function resumeGame() {
+            if (!animationFrameId) {
+                lastFrameTime = 0;
+                animationFrameId = requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        // Haptic feedback function
+        function vibrate(pattern) {
+            if (settings.hapticFeedback && navigator.vibrate) {
+                navigator.vibrate(pattern);
+            }
+        }
+        
+        // Save game state
+        function saveGameState() {
+            if (!settings.autoSave) return;
+            
+            const gameState = {
+                score,
+                lives,
+                enemySpawnRate,
+                player: {
+                    x: player.x,
+                    y: player.y
+                },
+                enemies: enemies.map(enemy => ({
+                    x: enemy.x,
+                    y: enemy.y,
+                    width: enemy.width,
+                    height: enemy.height,
+                    speed: enemy.speed,
+                    color: enemy.color
+                })),
+                bullets: bullets.map(bullet => ({
+                    x: bullet.x,
+                    y: bullet.y,
+                    width: bullet.width,
+                    height: bullet.height,
+                    speed: bullet.speed,
+                    color: bullet.color
+                })),
+                timestamp: Date.now()
+            };
+            
+            localStorage.setItem('spaceShooterGameState', JSON.stringify(gameState));
+            debug("Game state saved");
+        }
+        
+        // Load game state
+        function loadGameState() {
+            const savedState = localStorage.getItem('spaceShooterGameState');
+            if (!savedState) return false;
+            
+            try {
+                const gameState = JSON.parse(savedState);
+                
+                // Check if the saved state is recent (within the last hour)
+                if (Date.now() - gameState.timestamp > 3600000) {
+                    return false;
+                }
+                
+                // Restore game state
+                score = gameState.score;
+                lives = gameState.lives;
+                enemySpawnRate = gameState.enemySpawnRate;
+                
+                // Restore player position
+                player.x = gameState.player.x;
+                player.y = gameState.player.y;
+                
+                // Restore enemies
+                enemies.length = 0;
+                gameState.enemies.forEach(enemy => {
+                    enemies.push({
+                        x: enemy.x,
+                        y: enemy.y,
+                        width: enemy.width,
+                        height: enemy.height,
+                        speed: enemy.speed,
+                        color: enemy.color
+                    });
+                });
+                
+                // Restore bullets
+                bullets.length = 0;
+                gameState.bullets.forEach(bullet => {
+                    bullets.push({
+                        x: bullet.x,
+                        y: bullet.y,
+                        width: bullet.width,
+                        height: bullet.height,
+                        speed: bullet.speed,
+                        color: bullet.color
+                    });
+                });
+                
+                // Update UI
+                scoreElement.textContent = score;
+                livesElement.textContent = lives;
+                
+                debug("Game state loaded");
+                return true;
+            } catch (error) {
+                debug("Error loading game state: " + error.message);
+                return false;
+            }
+        }
+        
+        // Save settings
+        function saveSettings() {
+            localStorage.setItem('spaceShooterSettings', JSON.stringify(settings));
+        }
+        
+        // Load settings
+        function loadSettings() {
+            const savedSettings = localStorage.getItem('spaceShooterSettings');
+            if (savedSettings) {
+                try {
+                    const parsedSettings = JSON.parse(savedSettings);
+                    settings = { ...settings, ...parsedSettings };
+                    
+                    // Update UI
+                    hapticToggle.checked = settings.hapticFeedback;
+                    autoSaveToggle.checked = settings.autoSave;
+                } catch (error) {
+                    debug("Error loading settings: " + error.message);
+                }
+            }
+        }
+        
+        // Save high scores
+        function saveHighScore(newScore) {
+            // Load existing high scores
+            loadHighScores();
+            
+            // Add new score
+            highScores.push(newScore);
+            
+            // Sort scores (highest first)
+            highScores.sort((a, b) => b - a);
+            
+            // Keep only top 10
+            if (highScores.length > 10) {
+                highScores = highScores.slice(0, 10);
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('spaceShooterHighScores', JSON.stringify(highScores));
+        }
+        
+        // Load high scores
+        function loadHighScores() {
+            const savedScores = localStorage.getItem('spaceShooterHighScores');
+            if (savedScores) {
+                try {
+                    highScores = JSON.parse(savedScores);
+                } catch (error) {
+                    highScores = [];
+                    debug("Error loading high scores: " + error.message);
+                }
+            } else {
+                highScores = [];
+            }
+        }
+        
+        // Display high scores
+        function displayHighScores() {
+            debug("Displaying high scores");
+            loadHighScores();
+            
+            // Clear the list
+            scoresList.innerHTML = '';
+            
+            // Add scores to the list
+            if (highScores.length === 0) {
+                const li = document.createElement('li');
+                li.textContent = "No high scores yet!";
+                scoresList.appendChild(li);
+            } else {
+                highScores.forEach((score, index) => {
+                    const li = document.createElement('li');
+                    li.textContent = `${index + 1}. ${score}`;
+                    scoresList.appendChild(li);
+                });
+            }
+        }
+        
+        // Share score
+        function shareScore() {
+            debug("Share score clicked");
+            const text = `I scored ${score} points in Space Shooter!`;
+            const url = window.location.href;
+            
+            try {
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Space Shooter Score',
+                        text: text,
+                        url: url
+                    }).catch(error => {
+                        debug("Error sharing: " + error);
+                        // Fallback if share fails
+                        alert("Sharing failed. Your score: " + score);
+                    });
+                } else {
+                    // Fallback for browsers that don't support Web Share API
+                    debug("Web Share API not supported, using fallback");
+                    alert("Sharing not supported on this browser. Your score: " + score);
+                }
+            } catch (error) {
+                debug("Error in share function: " + error.message);
+                alert("Share feature not available. Your score: " + score);
+            }
+        }
+        
         // Control handlers
         function handleTouchStart(e) {
             e.preventDefault();
@@ -201,9 +710,6 @@
                 player.isMovingRight = true;
             } else if (element === shootBtn) {
                 player.isShooting = true;
-            } else if (element === restartBtn) {
-                debug("Restart button touched");
-                restartGame();
             }
         }
         
@@ -234,25 +740,14 @@
         shootBtn.addEventListener('touchstart', handleTouchStart, { passive: false });
         document.addEventListener('touchend', handleTouchEnd, { passive: false });
         
-        // Add specific touch events for restart button
-        restartBtn.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            debug("Restart button touchstart");
-            restartGame();
-        }, { passive: false });
-        
-        // Also add click event for desktop testing
-        restartBtn.addEventListener('click', function(e) {
-            debug("Restart button clicked");
-            restartGame();
-        });
-        
         // For testing on desktop
         window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft') player.isMovingLeft = true;
             if (e.key === 'ArrowRight') player.isMovingRight = true;
             if (e.key === ' ') player.isShooting = true;
             if (e.key === 'r') restartGame();
+            if (e.key === 's') openSettings();
+            if (e.key === 'h') openHighScores();
         });
         
         window.addEventListener('keyup', (e) => {
@@ -271,6 +766,9 @@
                 speed: 500,
                 color: '#FFFF00'
             });
+            
+            // Vibrate when shooting
+            vibrate(20);
         }
         
         function createEnemy() {
@@ -354,6 +852,9 @@
                     lives--;
                     livesElement.textContent = lives;
                     
+                    // Vibrate when player is hit
+                    vibrate([100, 50, 100]);
+                    
                     if (lives <= 0) {
                         gameOver();
                     }
@@ -370,6 +871,10 @@
                         hitByBullet = true;
                         score += 10;
                         scoreElement.textContent = score;
+                        
+                        // Vibrate when enemy is hit
+                        vibrate(30);
+                        
                         break;
                     }
                 }
@@ -503,6 +1008,12 @@
             finalScoreElement.textContent = score;
             gameOverElement.style.display = 'block';
             
+            // Save high score
+            saveHighScore(score);
+            
+            // Vibrate on game over
+            vibrate([200, 100, 200, 100, 400]);
+            
             // Cancel the animation frame to stop the game loop
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
@@ -527,6 +1038,7 @@
                 enemySpawnRate = 1500;
                 lastEnemySpawn = Date.now();
                 lastFrameTime = 0;
+                lastSaveTime = Date.now();
                 
                 // Update UI
                 scoreElement.textContent = score;
@@ -535,7 +1047,7 @@
                 
                 // Reset player position
                 player.x = canvas.width / 2;
-                player.y = canvas.height - 180; // Changed from canvas.height - 100
+                player.y = canvas.height - 180;
                 
                 // Clear all game objects
                 bullets.length = 0;
@@ -559,6 +1071,12 @@
                 if (!lastFrameTime) lastFrameTime = timestamp;
                 const deltaTime = Math.min((timestamp - lastFrameTime) / 1000, 0.1); // convert to seconds, cap at 0.1
                 lastFrameTime = timestamp;
+                
+                // Auto-save game state
+                if (settings.autoSave && Date.now() - lastSaveTime > saveInterval) {
+                    saveGameState();
+                    lastSaveTime = Date.now();
+                }
                 
                 // Clear canvas
                 ctx.fillStyle = '#000022';
@@ -600,8 +1118,28 @@
             }
         }
         
-        // Start the game
-        startGame();
+        // Register service worker for offline support
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('service-worker.js').then(function(registration) {
+                    debug('ServiceWorker registration successful with scope: ' + registration.scope);
+                }, function(err) {
+                    debug('ServiceWorker registration failed: ' + err);
+                });
+            });
+        }
+        
+        // Load settings
+        loadSettings();
+        
+        // Try to load saved game state
+        if (!loadGameState()) {
+            // If no saved state, start a new game
+            startGame();
+        } else {
+            // If saved state loaded, continue the game
+            startGame();
+        }
     </script>
 </body>
 </html>
