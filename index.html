@@ -266,18 +266,23 @@
         <h2>Game Over</h2>
         <p>Your score: <span id="finalScore">0</span></p>
         <div id="restartBtn">Play Again</div>
-<div 
+<button
   id="shareScoreBtn"
-  class="bg-slate-800 rounded-full w-12 h-12 flex items-center justify-center fixed bottom-4 right-4 z-50 cursor-pointer"
-  role="button"
-  tabindex="0"
+  class="bg-slate-800 rounded-full w-12 h-12 flex items-center justify-center fixed bottom-4 right-4 z-50 shadow-lg focus:outline-none"
   aria-label="Share your score"
 >
-  <svg class="w-6 h-6 text-white pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-    <path stroke-linecap="round" stroke-linejoin="round" d="M4 12v1a9 9 0 009 9v0a9 9 0 009-9v-1"></path>
+  <svg
+    class="w-5 h-5 text-white"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+  >
     <path stroke-linecap="round" stroke-linejoin="round" d="M16 8l4-4m0 0l-4-4m4 4H9"></path>
+    <path stroke-linecap="round" stroke-linejoin="round" d="M4 12v1a9 9 0 009 9v0a9 9 0 009-9v-1"></path>
   </svg>
-</div>
+</button>
+
     </div>
     
     <div id="highScores">
@@ -446,6 +451,7 @@
         
        
 
+// 1. Define the share logic once
 function handleShareClick() {
   debug("Share score clicked");
 
@@ -469,16 +475,24 @@ function handleShareClick() {
   }
 }
 
-// Handle click and key press
-document.getElementById("shareScoreBtn").addEventListener("click", handleShareClick);
-document.getElementById("shareScoreBtn").addEventListener("keydown", function (e) {
-  if (e.key === "Enter" || e.key === " ") {
-    e.preventDefault();
-    handleShareClick();
+// 2. Attach it to the button safely
+function initShareButton() {
+  const btn = document.getElementById("shareScoreBtn");
+  if (btn) {
+    btn.addEventListener("click", handleShareClick);
+    btn.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        handleShareClick();
+      }
+    });
   }
-});
+}
 
-        
+// 3. Call after DOM is ready
+document.addEventListener("DOMContentLoaded", initShareButton);
+
+       
         function pauseGame() {
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
