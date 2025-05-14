@@ -73,6 +73,9 @@
             justify-content: space-between;
             padding: 0 20px;
             z-index: 10;
+            background-color: rgba(0, 0, 0, 0.3); /* Added semi-transparent background */
+            padding-top: 10px;
+            padding-bottom: 10px;
         }
         
         .control-btn {
@@ -169,7 +172,7 @@
         // Player
         const player = {
             x: canvas.width / 2,
-            y: canvas.height - 100,
+            y: canvas.height - 180, // Changed from canvas.height - 100 to move ship higher
             width: 50,
             height: 50,
             speed: 300,
@@ -532,7 +535,7 @@
                 
                 // Reset player position
                 player.x = canvas.width / 2;
-                player.y = canvas.height - 100;
+                player.y = canvas.height - 180; // Changed from canvas.height - 100
                 
                 // Clear all game objects
                 bullets.length = 0;
