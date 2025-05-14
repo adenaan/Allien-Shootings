@@ -1,5 +1,5 @@
 const CACHE_NAME = "space-shooter-v1"
-const urlsToCache = ["/", "/index.html", "/manifest.json"]
+const urlsToCache = ["Allien-Shootings/", "Allien-Shootings/index.html", "Allien-Shootings/manifest.json"]
 
 self.addEventListener("install", (event) => {
   // Perform install steps
