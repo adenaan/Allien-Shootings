@@ -29,30 +29,6 @@
             left: 0;
             z-index: 1;
         }
-        #shareScoreBtn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 50;
-    width: 56px;
-    height: 56px;
-    background-color: #1e293b; /* slate-800 */
-    border-radius: 50%;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    cursor: pointer;
-}
-
-#shareScoreBtn svg {
-    width: 24px;
-    height: 24px;
-    color: white;
-    pointer-events: none;
-}
-
         
         #gameUI {
             position: fixed;
@@ -271,6 +247,95 @@
             cursor: pointer;
             border-radius: 5px;
         }
+        
+        /* Toast notification */
+        #toast {
+            visibility: hidden;
+            max-width: 300px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            text-align: center;
+            border-radius: 5px;
+            padding: 16px;
+            position: fixed;
+            z-index: 100;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 100px;
+            font-size: 16px;
+        }
+        
+        #toast.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+        
+        /* Power-up indicators */
+        #powerUpIndicators {
+            position: fixed;
+            top: 50px;
+            left: 10px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            pointer-events: none;
+        }
+        
+        .power-up-indicator {
+            display: flex;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .power-up-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+        }
+        
+        .power-up-timer {
+            width: 100px;
+            height: 10px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .power-up-timer-fill {
+            height: 100%;
+            background-color: white;
+            border-radius: 5px;
+        }
+        
+        @keyframes fadein {
+            from {bottom: 0; opacity: 0;}
+            to {bottom: 100px; opacity: 1;}
+        }
+        
+        @keyframes fadeout {
+            from {bottom: 100px; opacity: 1;}
+            to {bottom: 0; opacity: 0;}
+        }
+        
+        /* Power-up animation */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .pulse {
+            animation: pulse 1s infinite;
+        }
     </style>
 </head>
 <body>
@@ -281,6 +346,8 @@
         <div>Lives: <span id="lives">3</span></div>
     </div>
     
+    <div id="powerUpIndicators"></div>
+    
     <div id="gameMenu">
         <div id="settingsBtn" class="menu-btn">⚙️</div>
         <div id="highScoreBtn" class="menu-btn">🏆</div>
@@ -290,26 +357,7 @@
         <h2>Game Over</h2>
         <p>Your score: <span id="finalScore">0</span></p>
         <div id="restartBtn">Play Again</div>
-<!-- Share Button -->
-<div>
-<button id="shareScoreBtn" aria-label="Share your score">
-  <svg
-  xmlns="http://www.w3.org/2000/svg"
-  class="w-6 h-6 text-white pointer-events-none"
-  viewBox="0 0 24 24"
-  fill="none"
-  stroke="currentColor"
-  stroke-width="2"
->
-  <circle cx="18" cy="5" r="3" />
-  <circle cx="6" cy="12" r="3" />
-  <circle cx="18" cy="19" r="3" />
-  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-</svg>
-
-</button>
-</div>
+        <div id="copyScoreBtn" style="background-color: #1DA1F2; border: none; color: white; padding: 15px 30px; text-align: center; text-decoration: none; display: inline-block; font-size: 18px; margin-top: 15px; cursor: pointer; border-radius: 5px;">Copy Score</div>
     </div>
     
     <div id="highScores">
@@ -337,6 +385,9 @@
         <div id="shootBtn" class="control-btn">🔥</div>
     </div>
     
+    <!-- Toast notification -->
+    <div id="toast">Score copied to clipboard! You can now paste and share it.</div>
+    
     <!-- Debug element -->
     <div id="debug"></div>
 
@@ -346,6 +397,18 @@
             const debugElement = document.getElementById('debug');
             debugElement.textContent = message;
             console.log(message);
+        }
+        
+        // Toast notification function
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = "show";
+            
+            // After 3 seconds, remove the show class
+            setTimeout(function() { 
+                toast.className = toast.className.replace("show", ""); 
+            }, 3000);
         }
         
         // Game variables
@@ -368,7 +431,8 @@
         const scoresList = document.getElementById('scoresList');
         const closeScores = document.getElementById('closeScores');
         const closeSettings = document.getElementById('closeSettings');
-        const shareScoreBtn = document.getElementById('shareScoreBtn');
+        const copyScoreBtn = document.getElementById('copyScoreBtn');
+        const powerUpIndicators = document.getElementById('powerUpIndicators');
         
         // Get the height of the controls div for proper player positioning
         const controlsHeight = document.getElementById('controls').offsetHeight;
@@ -382,6 +446,49 @@
         // High scores
         let highScores = [];
         
+        // Power-up types
+        const POWER_UP_TYPES = {
+            SHIELD: 'shield',
+            RAPID_FIRE: 'rapidFire',
+            BOMB: 'bomb',
+            EXTRA_LIFE: 'extraLife',
+            MULTI_SHOT: 'multiShot'
+        };
+        
+        // Power-up settings
+        const POWER_UP_SETTINGS = {
+            [POWER_UP_TYPES.SHIELD]: {
+                duration: 10000, // 10 seconds
+                color: '#3498db',
+                symbol: '🛡️',
+                name: 'Shield'
+            },
+            [POWER_UP_TYPES.RAPID_FIRE]: {
+                duration: 8000, // 8 seconds
+                color: '#e74c3c',
+                symbol: '🔥',
+                name: 'Rapid Fire'
+            },
+            [POWER_UP_TYPES.BOMB]: {
+                duration: 0, // instant effect
+                color: '#9b59b6',
+                symbol: '💣',
+                name: 'Bomb'
+            },
+            [POWER_UP_TYPES.EXTRA_LIFE]: {
+                duration: 0, // instant effect
+                color: '#2ecc71',
+                symbol: '❤️',
+                name: 'Extra Life'
+            },
+            [POWER_UP_TYPES.MULTI_SHOT]: {
+                duration: 12000, // 12 seconds
+                color: '#f39c12',
+                symbol: '🔱',
+                name: 'Multi Shot'
+            }
+        };
+        
         // Game state
         let gameActive = true;
         let score = 0;
@@ -391,7 +498,17 @@
         let lastFrameTime = 0;
         let animationFrameId = null;
         let lastSaveTime = 0;
+        let lastPowerUpSpawn = 0;
         const saveInterval = 10000; // Save every 10 seconds
+        const powerUpSpawnInterval = 15000; // Spawn power-up every 15 seconds
+        const powerUpSpawnChance = 0.3; // 30% chance to spawn a power-up when an enemy is destroyed
+        
+        // Active power-ups
+        const activePowerUps = {
+            shield: { active: false, endTime: 0 },
+            rapidFire: { active: false, endTime: 0 },
+            multiShot: { active: false, endTime: 0 }
+        };
         
         debug("Game initialized");
         
@@ -420,7 +537,8 @@
             isMovingRight: false,
             isShooting: false,
             lastShot: 0,
-            shootCooldown: 300 // milliseconds
+            shootCooldown: 300, // milliseconds
+            originalShootCooldown: 300 // store original value for power-ups
         };
 
         // Now call resizeCanvas after player is defined
@@ -431,6 +549,7 @@
         const bullets = [];
         const enemies = [];
         const explosions = [];
+        const powerUps = [];
         
         // UI Functions
         function openSettings() {
@@ -475,39 +594,42 @@
             debug("Auto save: " + (settings.autoSave ? "ON" : "OFF"));
             vibrate(20); // Give feedback when toggled
         }
-
-        document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("shareScoreBtn")?.addEventListener("click", handleShareClick);
-});
         
-// document.getElementById("shareScoreBtn")?.addEventListener("click", handleShareClick);       
-
-// 1. Define the share logic once
-function handleShareClick() {
-  debug("Share score clicked");
-
-  const text = `I scored ${score} points in Space Shooter!`;
-  const url = window.location.href;
-
-  if (navigator.share) {
-    navigator.share({
-      title: 'Space Shooter Score',
-      text: text,
-      url: url
-    })
-    .catch(error => {
-      debug("Error sharing: " + error);
-      if (error.name !== 'AbortError') {
-        alert("Sharing failed. Your score: " + score);
-      }
-    });
-  } else {
-    alert("Sharing not supported on this browser. Your score: " + score);
-  }
-}
-
-
-       
+        // Copy score to clipboard
+        function copyScore() {
+            const text = `I scored ${score} points in Space Shooter!`;
+            
+            // Create a temporary input element
+            const tempInput = document.createElement("input");
+            tempInput.style.position = "absolute";
+            tempInput.style.left = "-1000px";
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            
+            // Select and copy the text
+            tempInput.select();
+            tempInput.setSelectionRange(0, 99999); // For mobile devices
+            
+            try {
+                // Execute the copy command
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    debug("Score copied to clipboard");
+                    showToast("Score copied to clipboard! You can now paste and share it.");
+                    vibrate(50); // Give feedback when copied
+                } else {
+                    debug("Failed to copy score");
+                    showToast("Failed to copy score.");
+                }
+            } catch (err) {
+                debug("Error copying score: " + err);
+                showToast("Error: couldn't copy score - " + err);
+            }
+            
+            // Remove the temporary input element
+            document.body.removeChild(tempInput);
+        }
+        
         function pauseGame() {
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
@@ -527,6 +649,167 @@ function handleShareClick() {
             if (settings.hapticFeedback && navigator.vibrate) {
                 navigator.vibrate(pattern);
             }
+        }
+        
+        // Power-up functions
+        function createPowerUp(x, y) {
+            // Get all power-up types
+            const powerUpTypes = Object.values(POWER_UP_TYPES);
+            
+            // Select a random power-up type
+            const type = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+            const settings = POWER_UP_SETTINGS[type];
+            
+            powerUps.push({
+                x,
+                y,
+                width: 30,
+                height: 30,
+                speed: 100,
+                type,
+                color: settings.color,
+                symbol: settings.symbol
+            });
+            
+            debug(`Power-up created: ${settings.name}`);
+        }
+        
+        function activatePowerUp(type) {
+            const settings = POWER_UP_SETTINGS[type];
+            
+            switch(type) {
+                case POWER_UP_TYPES.SHIELD:
+                    activePowerUps.shield.active = true;
+                    activePowerUps.shield.endTime = Date.now() + settings.duration;
+                    showToast("Shield activated!");
+                    vibrate([50, 50, 50]);
+                    updatePowerUpIndicators();
+                    break;
+                    
+                case POWER_UP_TYPES.RAPID_FIRE:
+                    activePowerUps.rapidFire.active = true;
+                    activePowerUps.rapidFire.endTime = Date.now() + settings.duration;
+                    player.shootCooldown = player.originalShootCooldown / 3; // 3x faster shooting
+                    showToast("Rapid Fire activated!");
+                    vibrate([50, 50, 50]);
+                    updatePowerUpIndicators();
+                    break;
+                    
+                case POWER_UP_TYPES.BOMB:
+                    // Destroy all enemies on screen
+                    enemies.forEach(enemy => {
+                        createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+                        score += 10;
+                    });
+                    
+                    // Update score
+                    scoreElement.textContent = score;
+                    
+                    // Clear enemies array
+                    enemies.length = 0;
+                    
+                    showToast("Bomb activated! All enemies destroyed!");
+                    vibrate([100, 50, 100, 50, 100]);
+                    break;
+                    
+                case POWER_UP_TYPES.EXTRA_LIFE:
+                    lives++;
+                    livesElement.textContent = lives;
+                    showToast("Extra Life collected!");
+                    vibrate([50, 50, 100]);
+                    break;
+                    
+                case POWER_UP_TYPES.MULTI_SHOT:
+                    activePowerUps.multiShot.active = true;
+                    activePowerUps.multiShot.endTime = Date.now() + settings.duration;
+                    showToast("Multi Shot activated!");
+                    vibrate([50, 50, 50]);
+                    updatePowerUpIndicators();
+                    break;
+            }
+            
+            debug(`Power-up activated: ${settings.name}`);
+        }
+        
+        function updatePowerUps() {
+            // Update active power-ups
+            const currentTime = Date.now();
+            
+            // Check shield
+            if (activePowerUps.shield.active && currentTime > activePowerUps.shield.endTime) {
+                activePowerUps.shield.active = false;
+                debug("Shield deactivated");
+                updatePowerUpIndicators();
+            }
+            
+            // Check rapid fire
+            if (activePowerUps.rapidFire.active && currentTime > activePowerUps.rapidFire.endTime) {
+                activePowerUps.rapidFire.active = false;
+                player.shootCooldown = player.originalShootCooldown;
+                debug("Rapid Fire deactivated");
+                updatePowerUpIndicators();
+            }
+            
+            // Check multi shot
+            if (activePowerUps.multiShot.active && currentTime > activePowerUps.multiShot.endTime) {
+                activePowerUps.multiShot.active = false;
+                debug("Multi Shot deactivated");
+                updatePowerUpIndicators();
+            }
+        }
+        
+        function updatePowerUpIndicators() {
+            // Clear existing indicators
+            powerUpIndicators.innerHTML = '';
+            
+            const currentTime = Date.now();
+            
+            // Add indicator for each active power-up
+            if (activePowerUps.shield.active) {
+                addPowerUpIndicator(
+                    POWER_UP_TYPES.SHIELD,
+                    (activePowerUps.shield.endTime - currentTime) / POWER_UP_SETTINGS[POWER_UP_TYPES.SHIELD].duration
+                );
+            }
+            
+            if (activePowerUps.rapidFire.active) {
+                addPowerUpIndicator(
+                    POWER_UP_TYPES.RAPID_FIRE,
+                    (activePowerUps.rapidFire.endTime - currentTime) / POWER_UP_SETTINGS[POWER_UP_TYPES.RAPID_FIRE].duration
+                );
+            }
+            
+            if (activePowerUps.multiShot.active) {
+                addPowerUpIndicator(
+                    POWER_UP_TYPES.MULTI_SHOT,
+                    (activePowerUps.multiShot.endTime - currentTime) / POWER_UP_SETTINGS[POWER_UP_TYPES.MULTI_SHOT].duration
+                );
+            }
+        }
+        
+        function addPowerUpIndicator(type, remainingPercentage) {
+            const settings = POWER_UP_SETTINGS[type];
+            
+            const indicator = document.createElement('div');
+            indicator.className = 'power-up-indicator';
+            
+            const icon = document.createElement('div');
+            icon.className = 'power-up-icon';
+            icon.style.backgroundColor = settings.color;
+            icon.textContent = settings.symbol;
+            
+            const timer = document.createElement('div');
+            timer.className = 'power-up-timer';
+            
+            const timerFill = document.createElement('div');
+            timerFill.className = 'power-up-timer-fill';
+            timerFill.style.width = `${remainingPercentage * 100}%`;
+            
+            timer.appendChild(timerFill);
+            indicator.appendChild(icon);
+            indicator.appendChild(timer);
+            
+            powerUpIndicators.appendChild(indicator);
         }
         
         // Save game state
@@ -557,6 +840,17 @@ function handleShareClick() {
                     speed: bullet.speed,
                     color: bullet.color
                 })),
+                powerUps: powerUps.map(powerUp => ({
+                    x: powerUp.x,
+                    y: powerUp.y,
+                    width: powerUp.width,
+                    height: powerUp.height,
+                    speed: powerUp.speed,
+                    type: powerUp.type,
+                    color: powerUp.color,
+                    symbol: powerUp.symbol
+                })),
+                activePowerUps,
                 timestamp: Date.now()
             };
             
@@ -612,6 +906,37 @@ function handleShareClick() {
                         color: bullet.color
                     });
                 });
+                
+                // Restore power-ups
+                powerUps.length = 0;
+                if (gameState.powerUps) {
+                    gameState.powerUps.forEach(powerUp => {
+                        powerUps.push({
+                            x: powerUp.x,
+                            y: powerUp.y,
+                            width: powerUp.width,
+                            height: powerUp.height,
+                            speed: powerUp.speed,
+                            type: powerUp.type,
+                            color: powerUp.color,
+                            symbol: powerUp.symbol
+                        });
+                    });
+                }
+                
+                // Restore active power-ups
+                if (gameState.activePowerUps) {
+                    activePowerUps.shield = gameState.activePowerUps.shield || { active: false, endTime: 0 };
+                    activePowerUps.rapidFire = gameState.activePowerUps.rapidFire || { active: false, endTime: 0 };
+                    activePowerUps.multiShot = gameState.activePowerUps.multiShot || { active: false, endTime: 0 };
+                    
+                    // Restore rapid fire cooldown if active
+                    if (activePowerUps.rapidFire.active) {
+                        player.shootCooldown = player.originalShootCooldown / 3;
+                    }
+                    
+                    updatePowerUpIndicators();
+                }
                 
                 // Update UI
                 scoreElement.textContent = score;
@@ -726,8 +1051,8 @@ function handleShareClick() {
                 closeHighScoresPanel();
             } else if (element === restartBtn) {
                 restartGame();
-            } else if (element === shareScoreBtn) {
-                handleShareClick();
+            } else if (element === copyScoreBtn) {
+                copyScore();
             } else if (element === hapticToggleBtn) {
                 toggleHaptic();
             } else if (element === autoSaveToggleBtn) {
@@ -770,10 +1095,7 @@ function handleShareClick() {
         closeSettings.addEventListener('click', closeSettingsPanel);
         closeScores.addEventListener('click', closeHighScoresPanel);
         restartBtn.addEventListener('click', restartGame);
-        shareScoreBtn.addEventListener('click', function(e) {
-            // Direct connection to user gesture
-            handleShareClick();
-        });
+        copyScoreBtn.addEventListener('click', copyScore);
         
         // For testing on desktop
         window.addEventListener('keydown', (e) => {
@@ -792,15 +1114,27 @@ function handleShareClick() {
         });
         
         // Game functions
-        function createBullet() {
+        function createBullet(offsetX = 0) {
             bullets.push({
-                x: player.x,
+                x: player.x + offsetX,
                 y: player.y - player.height / 2,
                 width: 5,
                 height: 15,
                 speed: 500,
                 color: '#FFFF00'
             });
+        }
+        
+        function shootBullets() {
+            if (activePowerUps.multiShot.active) {
+                // Create 3 bullets in a spread pattern
+                createBullet(-15); // Left bullet
+                createBullet(0);   // Center bullet
+                createBullet(15);  // Right bullet
+            } else {
+                // Create a single bullet
+                createBullet();
+            }
             
             // Vibrate when shooting
             vibrate(20);
@@ -849,7 +1183,7 @@ function handleShareClick() {
             
             // Shooting
             if (player.isShooting && Date.now() - player.lastShot > player.shootCooldown) {
-                createBullet();
+                shootBullets();
                 player.lastShot = Date.now();
             }
         }
@@ -876,6 +1210,18 @@ function handleShareClick() {
                 enemySpawnRate = Math.max(500, enemySpawnRate - 10);
             }
             
+            // Spawn power-ups periodically
+            if (Date.now() - lastPowerUpSpawn > powerUpSpawnInterval) {
+                // Only spawn if there are fewer than 3 power-ups on screen
+                if (powerUps.length < 3) {
+                    createPowerUp(
+                        Math.random() * (canvas.width - 30),
+                        -30
+                    );
+                    lastPowerUpSpawn = Date.now();
+                }
+            }
+            
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const enemy = enemies[i];
                 enemy.y += enemy.speed * deltaTime;
@@ -884,14 +1230,22 @@ function handleShareClick() {
                 if (checkCollision(enemy, player)) {
                     createExplosion(player.x, player.y);
                     enemies.splice(i, 1);
-                    lives--;
-                    livesElement.textContent = lives;
                     
-                    // Vibrate when player is hit
-                    vibrate([100, 50, 100]);
-                    
-                    if (lives <= 0) {
-                        gameOver();
+                    // If shield is active, don't lose a life
+                    if (!activePowerUps.shield.active) {
+                        lives--;
+                        livesElement.textContent = lives;
+                        
+                        // Vibrate when player is hit
+                        vibrate([100, 50, 100]);
+                        
+                        if (lives <= 0) {
+                            gameOver();
+                        }
+                    } else {
+                        // Shield absorbed the hit
+                        showToast("Shield absorbed hit!");
+                        vibrate(50);
                     }
                     continue;
                 }
@@ -910,6 +1264,14 @@ function handleShareClick() {
                         // Vibrate when enemy is hit
                         vibrate(30);
                         
+                        // Chance to spawn a power-up when enemy is destroyed
+                        if (Math.random() < powerUpSpawnChance) {
+                            createPowerUp(
+                                enemy.x + enemy.width / 2,
+                                enemy.y + enemy.height / 2
+                            );
+                        }
+                        
                         break;
                     }
                 }
@@ -922,6 +1284,25 @@ function handleShareClick() {
                 // Remove enemies that are off-screen
                 if (enemy.y > canvas.height) {
                     enemies.splice(i, 1);
+                }
+            }
+        }
+        
+        function updatePowerUpObjects(deltaTime) {
+            for (let i = powerUps.length - 1; i >= 0; i--) {
+                const powerUp = powerUps[i];
+                powerUp.y += powerUp.speed * deltaTime;
+                
+                // Check for collision with player
+                if (checkCollision(powerUp, player)) {
+                    activatePowerUp(powerUp.type);
+                    powerUps.splice(i, 1);
+                    continue;
+                }
+                
+                // Remove power-ups that are off-screen
+                if (powerUp.y > canvas.height) {
+                    powerUps.splice(i, 1);
                 }
             }
         }
@@ -946,6 +1327,20 @@ function handleShareClick() {
         }
         
         function drawPlayer() {
+            // Draw shield effect if active
+            if (activePowerUps.shield.active) {
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.width * 0.8, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(52, 152, 219, 0.3)';
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.width * 0.8, 0, Math.PI * 2);
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            
             ctx.fillStyle = player.color;
             
             // Draw ship body
@@ -964,6 +1359,31 @@ function handleShareClick() {
             ctx.lineTo(player.x + player.width / 4, player.y + player.height / 2);
             ctx.closePath();
             ctx.fill();
+            
+            // Draw multi-shot indicator if active
+            if (activePowerUps.multiShot.active) {
+                ctx.fillStyle = '#f39c12';
+                
+                // Left cannon
+                ctx.beginPath();
+                ctx.arc(player.x - player.width / 2, player.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Right cannon
+                ctx.beginPath();
+                ctx.arc(player.x + player.width / 2, player.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw rapid fire indicator if active
+            if (activePowerUps.rapidFire.active) {
+                ctx.fillStyle = '#e74c3c';
+                
+                // Front cannon glow
+                ctx.beginPath();
+                ctx.arc(player.x, player.y - player.height / 2, 8, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
         
         function drawBullets() {
@@ -1001,6 +1421,33 @@ function handleShareClick() {
                     Math.PI * 2
                 );
                 ctx.fill();
+            });
+        }
+        
+        function drawPowerUps() {
+            powerUps.forEach(powerUp => {
+                // Draw power-up background
+                ctx.fillStyle = powerUp.color;
+                ctx.beginPath();
+                ctx.arc(
+                    powerUp.x + powerUp.width / 2,
+                    powerUp.y + powerUp.height / 2,
+                    powerUp.width / 2,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fill();
+                
+                // Draw power-up symbol
+                ctx.fillStyle = 'white';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(
+                    powerUp.symbol,
+                    powerUp.x + powerUp.width / 2,
+                    powerUp.y + powerUp.height / 2
+                );
             });
         }
         
@@ -1074,6 +1521,16 @@ function handleShareClick() {
                 lastEnemySpawn = Date.now();
                 lastFrameTime = 0;
                 lastSaveTime = Date.now();
+                lastPowerUpSpawn = Date.now();
+                
+                // Reset power-ups
+                activePowerUps.shield.active = false;
+                activePowerUps.rapidFire.active = false;
+                activePowerUps.multiShot.active = false;
+                player.shootCooldown = player.originalShootCooldown;
+                
+                // Clear power-up indicators
+                powerUpIndicators.innerHTML = '';
                 
                 // Update UI
                 scoreElement.textContent = score;
@@ -1088,6 +1545,7 @@ function handleShareClick() {
                 bullets.length = 0;
                 enemies.length = 0;
                 explosions.length = 0;
+                powerUps.length = 0;
                 
                 // Restart the game loop
                 startGame();
@@ -1113,6 +1571,10 @@ function handleShareClick() {
                     lastSaveTime = Date.now();
                 }
                 
+                // Update power-ups
+                updatePowerUps();
+                updatePowerUpIndicators();
+                
                 // Clear canvas
                 ctx.fillStyle = '#000022';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1124,12 +1586,14 @@ function handleShareClick() {
                 updatePlayer(deltaTime);
                 updateBullets(deltaTime);
                 updateEnemies(deltaTime);
+                updatePowerUpObjects(deltaTime);
                 updateExplosions(deltaTime);
                 
                 // Draw game objects
                 drawPlayer();
                 drawBullets();
                 drawEnemies();
+                drawPowerUps();
                 drawExplosions();
                 
                 // Continue game loop
