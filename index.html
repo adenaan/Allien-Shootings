@@ -270,6 +270,79 @@
             animation: fadein 0.5s, fadeout 0.5s 2.5s;
         }
         
+        /* Power-up indicators */
+        #powerUpIndicators {
+            position: fixed;
+            top: 50px;
+            left: 10px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            pointer-events: none;
+        }
+        
+        .power-up-indicator {
+            display: flex;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .power-up-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+        }
+        
+        .power-up-timer {
+            width: 100px;
+            height: 10px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .power-up-timer-fill {
+            height: 100%;
+            background-color: white;
+            border-radius: 5px;
+        }
+        
+        /* Enemy type indicator */
+        #enemyTypes {
+            position: fixed;
+            top: 50px;
+            right: 10px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .enemy-type {
+            display: flex;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 14px;
+            animation: fadeIn 0.5s, fadeOut 0.5s 4.5s;
+            border: 1px solid white;
+        }
+
+        .enemy-icon {
+            width: 15px;
+            height: 15px;
+            margin-right: 8px;
+            border-radius: 50%;
+        }
+        
         @keyframes fadein {
             from {bottom: 0; opacity: 0;}
             to {bottom: 100px; opacity: 1;}
@@ -278,6 +351,38 @@
         @keyframes fadeout {
             from {bottom: 100px; opacity: 1;}
             to {bottom: 0; opacity: 0;}
+        }
+        
+        /* Power-up animation */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .pulse {
+            animation: pulse 1s infinite;
+        }
+        
+        /* Enemy animations */
+        @keyframes flash {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .flash {
+            animation: flash 0.5s infinite;
+        }
+
+        @keyframes fadeIn {
+            from {opacity: 0; transform: translateY(-20px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+
+        @keyframes fadeOut {
+            from {opacity: 1;}
+            to {opacity: 0;}
         }
     </style>
 </head>
@@ -288,6 +393,10 @@
         <div>Score: <span id="score">0</span></div>
         <div>Lives: <span id="lives">3</span></div>
     </div>
+    
+    <div id="powerUpIndicators"></div>
+    
+    <div id="enemyTypes"></div>
     
     <div id="gameMenu">
         <div id="settingsBtn" class="menu-btn">⚙️</div>
@@ -373,6 +482,8 @@
         const closeScores = document.getElementById('closeScores');
         const closeSettings = document.getElementById('closeSettings');
         const copyScoreBtn = document.getElementById('copyScoreBtn');
+        const powerUpIndicators = document.getElementById('powerUpIndicators');
+        const enemyTypes = document.getElementById('enemyTypes');
         
         // Get the height of the controls div for proper player positioning
         const controlsHeight = document.getElementById('controls').offsetHeight;
@@ -386,6 +497,111 @@
         // High scores
         let highScores = [];
         
+        // Enemy types
+        const ENEMY_TYPES = {
+            BASIC: 'basic',
+            ZIGZAG: 'zigzag',
+            HOMING: 'homing',
+            SHOOTER: 'shooter',
+            SPLITTER: 'splitter',
+            ARMORED: 'armored'
+        };
+        
+        // Enemy settings
+        const ENEMY_SETTINGS = {
+            [ENEMY_TYPES.BASIC]: {
+                color: '#e74c3c', // Red
+                health: 1,
+                speed: 100,
+                points: 10,
+                spawnWeight: 100, // Higher weight = more common
+                minScore: 0 // Appears from the start
+            },
+            [ENEMY_TYPES.ZIGZAG]: {
+                color: '#3498db', // Blue
+                health: 1,
+                speed: 120,
+                points: 15,
+                spawnWeight: 70,
+                minScore: 100 // Appears after 100 points
+            },
+            [ENEMY_TYPES.HOMING]: {
+                color: '#9b59b6', // Purple
+                health: 1,
+                speed: 80,
+                points: 20,
+                spawnWeight: 50,
+                minScore: 300 // Appears after 300 points
+            },
+            [ENEMY_TYPES.SHOOTER]: {
+                color: '#f39c12', // Orange
+                health: 1,
+                speed: 70,
+                points: 25,
+                spawnWeight: 40,
+                minScore: 500 // Appears after 500 points
+            },
+            [ENEMY_TYPES.SPLITTER]: {
+                color: '#2ecc71', // Green
+                health: 1,
+                speed: 90,
+                points: 30,
+                spawnWeight: 30,
+                minScore: 800 // Appears after 800 points
+            },
+            [ENEMY_TYPES.ARMORED]: {
+                color: '#7f8c8d', // Gray
+                health: 3,
+                speed: 60,
+                points: 50,
+                spawnWeight: 20,
+                minScore: 1000 // Appears after 1000 points
+            }
+        };
+        
+        // Power-up types
+        const POWER_UP_TYPES = {
+            SHIELD: 'shield',
+            RAPID_FIRE: 'rapidFire',
+            BOMB: 'bomb',
+            EXTRA_LIFE: 'extraLife',
+            MULTI_SHOT: 'multiShot'
+        };
+        
+        // Power-up settings
+        const POWER_UP_SETTINGS = {
+            [POWER_UP_TYPES.SHIELD]: {
+                duration: 10000, // 10 seconds
+                color: '#3498db',
+                symbol: '🛡️',
+                name: 'Shield'
+            },
+            [POWER_UP_TYPES.RAPID_FIRE]: {
+                duration: 8000, // 8 seconds
+                color: '#e74c3c',
+                symbol: '🔥',
+                name: 'Rapid Fire'
+            },
+            [POWER_UP_TYPES.BOMB]: {
+                duration: 0, // instant effect
+                color: '#9b59b6',
+                symbol: '💣',
+                name: 'Bomb'
+            },
+            [POWER_UP_TYPES.EXTRA_LIFE]: {
+                duration: 0, // instant effect
+                color: '#2ecc71',
+                symbol: '❤️',
+                name: 'Extra Life'
+            },
+            [POWER_UP_TYPES.MULTI_SHOT]: {
+                duration: 12000, // 12 seconds
+                color: '#f39c12',
+                symbol: '🔱',
+                name: 'Multi Shot'
+            }
+        };
+        
         // Game state
         let gameActive = true;
         let score = 0;
@@ -395,7 +611,18 @@
         let lastFrameTime = 0;
         let animationFrameId = null;
         let lastSaveTime = 0;
+        let lastPowerUpSpawn = 0;
+        let gameTime = 0; // Track total game time for enemy behaviors
         const saveInterval = 10000; // Save every 10 seconds
+        const powerUpSpawnInterval = 15000; // Spawn power-up every 15 seconds
+        const powerUpSpawnChance = 0.3; // 30% chance to spawn a power-up when an enemy is destroyed
+        
+        // Active power-ups
+        const activePowerUps = {
+            shield: { active: false, endTime: 0 },
+            rapidFire: { active: false, endTime: 0 },
+            multiShot: { active: false, endTime: 0 }
+        };
         
         debug("Game initialized");
         
@@ -424,7 +651,8 @@
             isMovingRight: false,
             isShooting: false,
             lastShot: 0,
-            shootCooldown: 300 // milliseconds
+            shootCooldown: 300, // milliseconds
+            originalShootCooldown: 300 // store original value for power-ups
         };
 
         // Now call resizeCanvas after player is defined
@@ -433,8 +661,10 @@
         
         // Game objects
         const bullets = [];
+        const enemyBullets = [];
         const enemies = [];
         const explosions = [];
+        const powerUps = [];
         
         // UI Functions
         function openSettings() {
@@ -536,6 +766,297 @@
             }
         }
         
+        // Enemy functions
+        function createEnemy() {
+            // Determine which enemy types can spawn based on current score
+            const availableTypes = Object.values(ENEMY_TYPES).filter(type => 
+                ENEMY_SETTINGS[type].minScore <= score
+            );
+            
+            // Calculate total spawn weight
+            let totalWeight = 0;
+            availableTypes.forEach(type => {
+                totalWeight += ENEMY_SETTINGS[type].spawnWeight;
+            });
+            
+            // Select a random enemy type based on weights
+            let randomWeight = Math.random() * totalWeight;
+            let selectedType = availableTypes[0]; // Default to first available
+            
+            for (const type of availableTypes) {
+                randomWeight -= ENEMY_SETTINGS[type].spawnWeight;
+                if (randomWeight <= 0) {
+                    selectedType = type;
+                    break;
+                }
+            }
+            
+            const settings = ENEMY_SETTINGS[selectedType];
+            const size = 30 + Math.random() * 20;
+            
+            // Create the enemy
+            const enemy = {
+                x: Math.random() * (canvas.width - size),
+                y: -size,
+                width: size,
+                height: size,
+                speed: settings.speed + Math.random() * 50, // Add some randomness
+                color: settings.color,
+                type: selectedType,
+                health: settings.health,
+                points: settings.points,
+                // Additional properties for specific enemy types
+                direction: Math.random() > 0.5 ? 1 : -1, // For zigzag enemies
+                amplitude: 50 + Math.random() * 50, // For zigzag enemies
+                frequency: 0.05 + Math.random() * 0.05, // For zigzag enemies
+                lastShot: 0, // For shooter enemies
+                shootCooldown: 1500 + Math.random() * 1000, // For shooter enemies
+                originalColor: settings.color // Store original color for armored enemies
+            };
+            
+            enemies.push(enemy);
+            debug(`Created ${selectedType} enemy`);
+        }
+        
+        function createEnemyBullet(enemy) {
+            enemyBullets.push({
+                x: enemy.x + enemy.width / 2,
+                y: enemy.y + enemy.height,
+                width: 5,
+                height: 10,
+                speed: 300,
+                color: '#FF0000'
+            });
+        }
+        
+        function createSplitterEnemies(parent) {
+            // Create 2-3 smaller enemies when a splitter is destroyed
+            const numSplits = 2 + Math.floor(Math.random() * 2);
+            const newSize = parent.width * 0.6;
+            
+            for (let i = 0; i < numSplits; i++) {
+                const offsetX = (i - (numSplits - 1) / 2) * newSize;
+                
+                enemies.push({
+                    x: parent.x + offsetX,
+                    y: parent.y,
+                    width: newSize,
+                    height: newSize,
+                    speed: parent.speed * 1.2,
+                    color: parent.color,
+                    type: ENEMY_TYPES.BASIC, // Child enemies are basic type
+                    health: 1,
+                    points: Math.floor(parent.points / 2)
+                });
+            }
+        }
+        
+        // Power-up functions
+        function createPowerUp(x, y) {
+            // Get all power-up types
+            const powerUpTypes = Object.values(POWER_UP_TYPES);
+            
+            // Select a random power-up type
+            const type = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+            const settings = POWER_UP_SETTINGS[type];
+            
+            powerUps.push({
+                x,
+                y,
+                width: 30,
+                height: 30,
+                speed: 100,
+                type,
+                color: settings.color,
+                symbol: settings.symbol
+            });
+            
+            debug(`Power-up created: ${settings.name}`);
+        }
+        
+        function activatePowerUp(type) {
+            const settings = POWER_UP_SETTINGS[type];
+            
+            switch(type) {
+                case POWER_UP_TYPES.SHIELD:
+                    activePowerUps.shield.active = true;
+                    activePowerUps.shield.endTime = Date.now() + settings.duration;
+                    showToast("Shield activated!");
+                    vibrate([50, 50, 50]);
+                    updatePowerUpIndicators();
+                    break;
+                    
+                case POWER_UP_TYPES.RAPID_FIRE:
+                    activePowerUps.rapidFire.active = true;
+                    activePowerUps.rapidFire.endTime = Date.now() + settings.duration;
+                    player.shootCooldown = player.originalShootCooldown / 3; // 3x faster shooting
+                    showToast("Rapid Fire activated!");
+                    vibrate([50, 50, 50]);
+                    updatePowerUpIndicators();
+                    break;
+                    
+                case POWER_UP_TYPES.BOMB:
+                    // Destroy all enemies on screen
+                    enemies.forEach(enemy => {
+                        createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+                        score += enemy.points;
+                    });
+                    
+                    // Update score
+                    scoreElement.textContent = score;
+                    
+                    // Clear enemies array
+                    enemies.length = 0;
+                    
+                    showToast("Bomb activated! All enemies destroyed!");
+                    vibrate([100, 50, 100, 50, 100]);
+                    break;
+                    
+                case POWER_UP_TYPES.EXTRA_LIFE:
+                    lives++;
+                    livesElement.textContent = lives;
+                    showToast("Extra Life collected!");
+                    vibrate([50, 50, 100]);
+                    break;
+                    
+                case POWER_UP_TYPES.MULTI_SHOT:
+                    activePowerUps.multiShot.active = true;
+                    activePowerUps.multiShot.endTime = Date.now() + settings.duration;
+                    showToast("Multi Shot activated!");
+                    vibrate([50, 50, 50]);
+                    updatePowerUpIndicators();
+                    break;
+            }
+            
+            debug(`Power-up activated: ${settings.name}`);
+        }
+        
+        function updatePowerUps() {
+            // Update active power-ups
+            const currentTime = Date.now();
+            
+            // Check shield
+            if (activePowerUps.shield.active && currentTime > activePowerUps.shield.endTime) {
+                activePowerUps.shield.active = false;
+                debug("Shield deactivated");
+                updatePowerUpIndicators();
+            }
+            
+            // Check rapid fire
+            if (activePowerUps.rapidFire.active && currentTime > activePowerUps.rapidFire.endTime) {
+                activePowerUps.rapidFire.active = false;
+                player.shootCooldown = player.originalShootCooldown;
+                debug("Rapid Fire deactivated");
+                updatePowerUpIndicators();
+            }
+            
+            // Check multi shot
+            if (activePowerUps.multiShot.active && currentTime > activePowerUps.multiShot.endTime) {
+                activePowerUps.multiShot.active = false;
+                debug("Multi Shot deactivated");
+                updatePowerUpIndicators();
+            }
+        }
+        
+        function updatePowerUpIndicators() {
+            // Clear existing indicators
+            powerUpIndicators.innerHTML = '';
+            
+            const currentTime = Date.now();
+            
+            // Add indicator for each active power-up
+            if (activePowerUps.shield.active) {
+                addPowerUpIndicator(
+                    POWER_UP_TYPES.SHIELD,
+                    (activePowerUps.shield.endTime - currentTime) / POWER_UP_SETTINGS[POWER_UP_TYPES.SHIELD].duration
+                );
+            }
+            
+            if (activePowerUps.rapidFire.active) {
+                addPowerUpIndicator(
+                    POWER_UP_TYPES.RAPID_FIRE,
+                    (activePowerUps.rapidFire.endTime - currentTime) / POWER_UP_SETTINGS[POWER_UP_TYPES.RAPID_FIRE].duration
+                );
+            }
+            
+            if (activePowerUps.multiShot.active) {
+                addPowerUpIndicator(
+                    POWER_UP_TYPES.MULTI_SHOT,
+                    (activePowerUps.multiShot.endTime - currentTime) / POWER_UP_SETTINGS[POWER_UP_TYPES.MULTI_SHOT].duration
+                );
+            }
+        }
+        
+        function addPowerUpIndicator(type, remainingPercentage) {
+            const settings = POWER_UP_SETTINGS[type];
+            
+            const indicator = document.createElement('div');
+            indicator.className = 'power-up-indicator';
+            
+            const icon = document.createElement('div');
+            icon.className = 'power-up-icon';
+            icon.style.backgroundColor = settings.color;
+            icon.textContent = settings.symbol;
+            
+            const timer = document.createElement('div');
+            timer.className = 'power-up-timer';
+            
+            const timerFill = document.createElement('div');
+            timerFill.className = 'power-up-timer-fill';
+            timerFill.style.width = `${remainingPercentage * 100}%`;
+            
+            timer.appendChild(timerFill);
+            indicator.appendChild(icon);
+            indicator.appendChild(timer);
+            
+            powerUpIndicators.appendChild(indicator);
+        }
+        
+        function updateEnemyTypeIndicators() {
+            // Clear existing indicators
+            enemyTypes.innerHTML = '';
+            
+            // Find the most recently unlocked enemy type based on score
+            let newEnemyType = null;
+            let highestMinScore = -1;
+            
+            Object.values(ENEMY_TYPES).forEach(type => {
+                const minScore = ENEMY_SETTINGS[type].minScore;
+                // Check if this enemy type was just unlocked (score is between minScore and minScore + 100)
+                if (score >= minScore && score < minScore + 100 && minScore > highestMinScore) {
+                    newEnemyType = type;
+                    highestMinScore = minScore;
+                }
+            });
+            
+            // If a new enemy type was unlocked, show it
+            if (newEnemyType) {
+                const settings = ENEMY_SETTINGS[newEnemyType];
+                
+                const indicator = document.createElement('div');
+                indicator.className = 'enemy-type';
+                
+                const icon = document.createElement('div');
+                icon.className = 'enemy-icon';
+                icon.style.backgroundColor = settings.color;
+                
+                const name = document.createElement('span');
+                name.textContent = `New Enemy: ${newEnemyType.charAt(0).toUpperCase() + newEnemyType.slice(1)}`;
+                
+                indicator.appendChild(icon);
+                indicator.appendChild(name);
+                
+                enemyTypes.appendChild(indicator);
+                
+                // Make the indicator disappear after 5 seconds
+                setTimeout(() => {
+                    if (enemyTypes.contains(indicator)) {
+                        enemyTypes.removeChild(indicator);
+                    }
+                }, 5000);
+            }
+        }
+        
         // Save game state
         function saveGameState() {
             if (!settings.autoSave) return;
@@ -544,6 +1065,7 @@
                 score,
                 lives,
                 enemySpawnRate,
+                gameTime,
                 player: {
                     x: player.x,
                     y: player.y
@@ -554,7 +1076,16 @@
                     width: enemy.width,
                     height: enemy.height,
                     speed: enemy.speed,
-                    color: enemy.color
+                    color: enemy.color,
+                    type: enemy.type,
+                    health: enemy.health,
+                    points: enemy.points,
+                    direction: enemy.direction,
+                    amplitude: enemy.amplitude,
+                    frequency: enemy.frequency,
+                    lastShot: enemy.lastShot,
+                    shootCooldown: enemy.shootCooldown,
+                    originalColor: enemy.originalColor
                 })),
                 bullets: bullets.map(bullet => ({
                     x: bullet.x,
@@ -564,6 +1095,25 @@
                     speed: bullet.speed,
                     color: bullet.color
                 })),
+                enemyBullets: enemyBullets.map(bullet => ({
+                    x: bullet.x,
+                    y: bullet.y,
+                    width: bullet.width,
+                    height: bullet.height,
+                    speed: bullet.speed,
+                    color: bullet.color
+                })),
+                powerUps: powerUps.map(powerUp => ({
+                    x: powerUp.x,
+                    y: powerUp.y,
+                    width: powerUp.width,
+                    height: powerUp.height,
+                    speed: powerUp.speed,
+                    type: powerUp.type,
+                    color: powerUp.color,
+                    symbol: powerUp.symbol
+                })),
+                activePowerUps,
                 timestamp: Date.now()
             };
             
@@ -588,6 +1138,7 @@
                 score = gameState.score;
                 lives = gameState.lives;
                 enemySpawnRate = gameState.enemySpawnRate;
+                gameTime = gameState.gameTime || 0;
                 
                 // Restore player position
                 player.x = gameState.player.x;
@@ -603,7 +1154,16 @@
                         width: enemy.width,
                         height: enemy.height,
                         speed: enemy.speed,
-                        color: enemy.color
+                        color: enemy.color,
+                        type: enemy.type,
+                        health: enemy.health,
+                        points: enemy.points,
+                        direction: enemy.direction,
+                        amplitude: enemy.amplitude,
+                        frequency: enemy.frequency,
+                        lastShot: enemy.lastShot,
+                        shootCooldown: enemy.shootCooldown,
+                        originalColor: enemy.originalColor
                     });
                 });
                 
@@ -620,9 +1180,56 @@
                     });
                 });
                 
+                // Restore enemy bullets
+                enemyBullets.length = 0;
+                if (gameState.enemyBullets) {
+                    gameState.enemyBullets.forEach(bullet => {
+                        enemyBullets.push({
+                            x: bullet.x,
+                            y: bullet.y,
+                            width: bullet.width,
+                            height: bullet.height,
+                            speed: bullet.speed,
+                            color: bullet.color
+                        });
+                    });
+                }
+                
+                // Restore power-ups
+                powerUps.length = 0;
+                if (gameState.powerUps) {
+                    gameState.powerUps.forEach(powerUp => {
+                        powerUps.push({
+                            x: powerUp.x,
+                            y: powerUp.y,
+                            width: powerUp.width,
+                            height: powerUp.height,
+                            speed: powerUp.speed,
+                            type: powerUp.type,
+                            color: powerUp.color,
+                            symbol: powerUp.symbol
+                        });
+                    });
+                }
+                
+                // Restore active power-ups
+                if (gameState.activePowerUps) {
+                    activePowerUps.shield = gameState.activePowerUps.shield || { active: false, endTime: 0 };
+                    activePowerUps.rapidFire = gameState.activePowerUps.rapidFire || { active: false, endTime: 0 };
+                    activePowerUps.multiShot = gameState.activePowerUps.multiShot || { active: false, endTime: 0 };
+                    
+                    // Restore rapid fire cooldown if active
+                    if (activePowerUps.rapidFire.active) {
+                        player.shootCooldown = player.originalShootCooldown / 3;
+                    }
+                    
+                    updatePowerUpIndicators();
+                }
+                
                 // Update UI
                 scoreElement.textContent = score;
                 livesElement.textContent = lives;
+                updateEnemyTypeIndicators();
                 
                 debug("Game state loaded");
                 return true;
@@ -796,30 +1403,30 @@
         });
         
         // Game functions
-        function createBullet() {
+        function createBullet(offsetX = 0) {
             bullets.push({
-                x: player.x,
+                x: player.x + offsetX,
                 y: player.y - player.height / 2,
                 width: 5,
                 height: 15,
                 speed: 500,
                 color: '#FFFF00'
             });
+        }
+        
+        function shootBullets() {
+            if (activePowerUps.multiShot.active) {
+                // Create 3 bullets in a spread pattern
+                createBullet(-15); // Left bullet
+                createBullet(0);   // Center bullet
+                createBullet(15);  // Right bullet
+            } else {
+                // Create a single bullet
+                createBullet();
+            }
             
             // Vibrate when shooting
             vibrate(20);
-        }
-        
-        function createEnemy() {
-            const size = 30 + Math.random() * 20;
-            enemies.push({
-                x: Math.random() * (canvas.width - size),
-                y: -size,
-                width: size,
-                height: size,
-                speed: 100 + Math.random() * 100,
-                color: `hsl(${Math.random() * 360}, 100%, 50%)`
-            });
         }
         
         function createExplosion(x, y) {
@@ -853,7 +1460,7 @@
             
             // Shooting
             if (player.isShooting && Date.now() - player.lastShot > player.shootCooldown) {
-                createBullet();
+                shootBullets();
                 player.lastShot = Date.now();
             }
         }
@@ -870,6 +1477,42 @@
             }
         }
         
+        function updateEnemyBullets(deltaTime) {
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                const bullet = enemyBullets[i];
+                bullet.y += bullet.speed * deltaTime;
+                
+                // Check for collision with player
+                if (checkCollision(bullet, player)) {
+                    createExplosion(player.x, player.y);
+                    enemyBullets.splice(i, 1);
+                    
+                    // If shield is active, don't lose a life
+                    if (!activePowerUps.shield.active) {
+                        lives--;
+                        livesElement.textContent = lives;
+                        
+                        // Vibrate when player is hit
+                        vibrate([100, 50, 100]);
+                        
+                        if (lives <= 0) {
+                            gameOver();
+                        }
+                    } else {
+                        // Shield absorbed the hit
+                        showToast("Shield absorbed hit!");
+                        vibrate(50);
+                    }
+                    continue;
+                }
+                
+                // Remove bullets that are off-screen
+                if (bullet.y > canvas.height) {
+                    enemyBullets.splice(i, 1);
+                }
+            }
+        }
+        
         function updateEnemies(deltaTime) {
             // Spawn new enemies
             if (Date.now() - lastEnemySpawn > enemySpawnRate) {
@@ -880,23 +1523,110 @@
                 enemySpawnRate = Math.max(500, enemySpawnRate - 10);
             }
             
+            // Spawn power-ups periodically
+            if (Date.now() - lastPowerUpSpawn > powerUpSpawnInterval) {
+                // Only spawn if there are fewer than 3 power-ups on screen
+                if (powerUps.length < 3) {
+                    createPowerUp(
+                        Math.random() * (canvas.width - 30),
+                        -30
+                    );
+                    lastPowerUpSpawn = Date.now();
+                }
+            }
+            
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const enemy = enemies[i];
-                enemy.y += enemy.speed * deltaTime;
+                
+                // Update enemy position based on type
+                switch(enemy.type) {
+                    case ENEMY_TYPES.BASIC:
+                        // Basic enemy just moves straight down
+                        enemy.y += enemy.speed * deltaTime;
+                        break;
+                        
+                    case ENEMY_TYPES.ZIGZAG:
+                        // Zigzag enemy moves in a sine wave pattern
+                        enemy.y += enemy.speed * deltaTime;
+                        enemy.x += Math.sin(gameTime * enemy.frequency) * enemy.amplitude * deltaTime * enemy.direction;
+                        
+                        // Keep within screen bounds
+                        if (enemy.x < enemy.width / 2) {
+                            enemy.x = enemy.width / 2;
+                            enemy.direction *= -1;
+                        } else if (enemy.x > canvas.width - enemy.width / 2) {
+                            enemy.x = canvas.width - enemy.width / 2;
+                            enemy.direction *= -1;
+                        }
+                        break;
+                        
+                    case ENEMY_TYPES.HOMING:
+                        // Homing enemy moves toward the player
+                        enemy.y += enemy.speed * deltaTime;
+                        
+                        // Move toward player's x position
+                        const dx = player.x - enemy.x;
+                        const homingSpeed = enemy.speed * 0.5 * deltaTime;
+                        enemy.x += Math.sign(dx) * Math.min(Math.abs(dx), homingSpeed);
+                        break;
+                        
+                    case ENEMY_TYPES.SHOOTER:
+                        // Shooter enemy moves down and shoots periodically
+                        enemy.y += enemy.speed * deltaTime;
+                        
+                        // Shoot at player
+                        if (Date.now() - enemy.lastShot > enemy.shootCooldown) {
+                            createEnemyBullet(enemy);
+                            enemy.lastShot = Date.now();
+                        }
+                        break;
+                        
+                    case ENEMY_TYPES.SPLITTER:
+                        // Splitter enemy just moves down (splitting happens when destroyed)
+                        enemy.y += enemy.speed * deltaTime;
+                        break;
+                        
+                    case ENEMY_TYPES.ARMORED:
+                        // Armored enemy moves down but takes multiple hits
+                        enemy.y += enemy.speed * deltaTime;
+                        
+                        // Flash color based on health
+                        if (enemy.health < ENEMY_SETTINGS[ENEMY_TYPES.ARMORED].health) {
+                            // Flash between original color and damaged color
+                            const flashRate = 0.2; // seconds per flash
+                            const t = (gameTime % flashRate) / flashRate;
+                            if (t < 0.5) {
+                                enemy.color = enemy.originalColor;
+                            } else {
+                                enemy.color = '#ff0000'; // Red when damaged
+                            }
+                        }
+                        break;
+                }
                 
                 // Check for collision with player
                 if (checkCollision(enemy, player)) {
                     createExplosion(player.x, player.y);
-                    enemies.splice(i, 1);
-                    lives--;
-                    livesElement.textContent = lives;
                     
-                    // Vibrate when player is hit
-                    vibrate([100, 50, 100]);
-                    
-                    if (lives <= 0) {
-                        gameOver();
+                    // If shield is active, don't lose a life
+                    if (!activePowerUps.shield.active) {
+                        lives--;
+                        livesElement.textContent = lives;
+                        
+                        // Vibrate when player is hit
+                        vibrate([100, 50, 100]);
+                        
+                        if (lives <= 0) {
+                            gameOver();
+                        }
+                    } else {
+                        // Shield absorbed the hit
+                        showToast("Shield absorbed hit!");
+                        vibrate(50);
                     }
+                    
+                    // Remove the enemy
+                    enemies.splice(i, 1);
                     continue;
                 }
                 
@@ -905,20 +1635,70 @@
                 for (let j = bullets.length - 1; j >= 0; j--) {
                     const bullet = bullets[j];
                     if (checkCollision(enemy, bullet)) {
-                        createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+                        // Remove the bullet
                         bullets.splice(j, 1);
-                        hitByBullet = true;
-                        score += 10;
-                        scoreElement.textContent = score;
                         
-                        // Vibrate when enemy is hit
-                        vibrate(30);
+                        // Reduce enemy health
+                        enemy.health--;
+                        
+                        // If enemy is destroyed
+                        if (enemy.health <= 0) {
+                            createExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+                            
+                            // Add points
+                            score += enemy.points;
+                            scoreElement.textContent = score;
+                            
+                            // Check if we need to update enemy type indicators
+                            const newEnemyTypes = Object.values(ENEMY_TYPES).filter(type => 
+                                ENEMY_SETTINGS[type].minScore <= score && 
+                                ENEMY_SETTINGS[type].minScore > score - enemy.points
+                            );
+                            
+                            if (newEnemyTypes.length > 0) {
+                                updateEnemyTypeIndicators();
+                            }
+                            
+                            // Handle splitter enemy
+                            if (enemy.type === ENEMY_TYPES.SPLITTER) {
+                                createSplitterEnemies(enemy);
+                            }
+                            
+                            // Chance to spawn a power-up when enemy is destroyed
+                            if (Math.random() < powerUpSpawnChance) {
+                                createPowerUp(
+                                    enemy.x + enemy.width / 2,
+                                    enemy.y + enemy.height / 2
+                                );
+                            }
+                            
+                            hitByBullet = true;
+                            
+                            // Vibrate when enemy is hit
+                            vibrate(30);
+                        } else {
+                            // Enemy was hit but not destroyed
+                            // For armored enemies, show damage
+                            if (enemy.type === ENEMY_TYPES.ARMORED) {
+                                enemy.color = '#ff0000'; // Red flash
+                            }
+                            
+                            // Small explosion for hit
+                            createExplosion(
+                                bullet.x, 
+                                bullet.y, 
+                                { maxRadius: 15, fadeSpeed: 3 }
+                            );
+                            
+                            // Vibrate lightly for hit
+                            vibrate(10);
+                        }
                         
                         break;
                     }
                 }
                 
-                if (hitByBullet) {
+                if (hitByBullet && enemy.health <= 0) {
                     enemies.splice(i, 1);
                     continue;
                 }
@@ -926,6 +1706,25 @@
                 // Remove enemies that are off-screen
                 if (enemy.y > canvas.height) {
                     enemies.splice(i, 1);
+                }
+            }
+        }
+        
+        function updatePowerUpObjects(deltaTime) {
+            for (let i = powerUps.length - 1; i >= 0; i--) {
+                const powerUp = powerUps[i];
+                powerUp.y += powerUp.speed * deltaTime;
+                
+                // Check for collision with player
+                if (checkCollision(powerUp, player)) {
+                    activatePowerUp(powerUp.type);
+                    powerUps.splice(i, 1);
+                    continue;
+                }
+                
+                // Remove power-ups that are off-screen
+                if (powerUp.y > canvas.height) {
+                    powerUps.splice(i, 1);
                 }
             }
         }
@@ -950,6 +1749,20 @@
         }
         
         function drawPlayer() {
+            // Draw shield effect if active
+            if (activePowerUps.shield.active) {
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.width * 0.8, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(52, 152, 219, 0.3)';
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.width * 0.8, 0, Math.PI * 2);
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            
             ctx.fillStyle = player.color;
             
             // Draw ship body
@@ -968,6 +1781,31 @@
             ctx.lineTo(player.x + player.width / 4, player.y + player.height / 2);
             ctx.closePath();
             ctx.fill();
+            
+            // Draw multi-shot indicator if active
+            if (activePowerUps.multiShot.active) {
+                ctx.fillStyle = '#f39c12';
+                
+                // Left cannon
+                ctx.beginPath();
+                ctx.arc(player.x - player.width / 2, player.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Right cannon
+                ctx.beginPath();
+                ctx.arc(player.x + player.width / 2, player.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw rapid fire indicator if active
+            if (activePowerUps.rapidFire.active) {
+                ctx.fillStyle = '#e74c3c';
+                
+                // Front cannon glow
+                ctx.beginPath();
+                ctx.arc(player.x, player.y - player.height / 2, 8, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
         
         function drawBullets() {
@@ -982,29 +1820,254 @@
             });
         }
         
+        function drawEnemyBullets() {
+            ctx.fillStyle = '#FF0000';
+            enemyBullets.forEach(bullet => {
+                ctx.fillRect(
+                    bullet.x - bullet.width / 2,
+                    bullet.y - bullet.height / 2,
+                    bullet.width,
+                    bullet.height
+                );
+            });
+        }
+        
         function drawEnemies() {
             enemies.forEach(enemy => {
                 ctx.fillStyle = enemy.color;
                 
-                // Draw enemy ship
-                ctx.beginPath();
-                ctx.moveTo(enemy.x + enemy.width / 2, enemy.y);
-                ctx.lineTo(enemy.x, enemy.y + enemy.height);
-                ctx.lineTo(enemy.x + enemy.width, enemy.y + enemy.height);
-                ctx.closePath();
-                ctx.fill();
-                
-                // Draw enemy details
-                ctx.fillStyle = '#000';
+                // Draw different enemy shapes based on type
+                switch(enemy.type) {
+                    case ENEMY_TYPES.BASIC:
+                        // Basic triangle enemy
+                        ctx.beginPath();
+                        ctx.moveTo(enemy.x + enemy.width / 2, enemy.y);
+                        ctx.lineTo(enemy.x, enemy.y + enemy.height);
+                        ctx.lineTo(enemy.x + enemy.width, enemy.y + enemy.height);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Draw enemy details
+                        ctx.fillStyle = '#000';
+                        ctx.beginPath();
+                        ctx.arc(
+                            enemy.x + enemy.width / 2,
+                            enemy.y + enemy.height / 2,
+                            enemy.width / 5,
+                            0,
+                            Math.PI * 2
+                        );
+                        ctx.fill();
+                        break;
+                        
+                    case ENEMY_TYPES.ZIGZAG:
+                        // Zigzag enemy (diamond shape)
+                        ctx.beginPath();
+                        ctx.moveTo(enemy.x + enemy.width / 2, enemy.y);
+                        ctx.lineTo(enemy.x + enemy.width, enemy.y + enemy.height / 2);
+                        ctx.lineTo(enemy.x + enemy.width / 2, enemy.y + enemy.height);
+                        ctx.lineTo(enemy.x, enemy.y + enemy.height / 2);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Draw zigzag pattern
+                        ctx.strokeStyle = '#000';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(enemy.x + enemy.width * 0.3, enemy.y + enemy.height * 0.3);
+                        ctx.lineTo(enemy.x + enemy.width * 0.5, enemy.y + enemy.height * 0.5);
+                        ctx.lineTo(enemy.x + enemy.width * 0.7, enemy.y + enemy.height * 0.3);
+                        ctx.stroke();
+                        break;
+                        
+                    case ENEMY_TYPES.HOMING:
+                        // Homing enemy (circle with targeting reticle)
+                        ctx.beginPath();
+                        ctx.arc(
+                            enemy.x + enemy.width / 2,
+                            enemy.y + enemy.height / 2,
+                            enemy.width / 2,
+                            0,
+                            Math.PI * 2
+                        );
+                        ctx.fill();
+                        
+                        // Draw targeting reticle
+                        ctx.strokeStyle = '#000';
+                        ctx.lineWidth = 2;
+                        
+                        // Horizontal line
+                        ctx.beginPath();
+                        ctx.moveTo(enemy.x + enemy.width * 0.3, enemy.y + enemy.height / 2);
+                        ctx.lineTo(enemy.x + enemy.width * 0.7, enemy.y + enemy.height / 2);
+                        ctx.stroke();
+                        
+                        // Vertical line
+                        ctx.beginPath();
+                        ctx.moveTo(enemy.x + enemy.width / 2, enemy.y + enemy.height * 0.3);
+                        ctx.lineTo(enemy.x + enemy.width / 2, enemy.y + enemy.height * 0.7);
+                        ctx.stroke();
+                        
+                        // Circle
+                        ctx.beginPath();
+                        ctx.arc(
+                            enemy.x + enemy.width / 2,
+                            enemy.y + enemy.height / 2,
+                            enemy.width / 4,
+                            0,
+                            Math.PI * 2
+                        );
+                        ctx.stroke();
+                        break;
+                        
+                    case ENEMY_TYPES.SHOOTER:
+                        // Shooter enemy (rectangle with cannon)
+                        ctx.fillRect(
+                            enemy.x,
+                            enemy.y,
+                            enemy.width,
+                            enemy.height
+                        );
+                        
+                        // Draw cannon
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(
+                            enemy.x + enemy.width / 2 - 5,
+                            enemy.y + enemy.height - 5,
+                            10,
+                            10
+                        );
+                        
+                        // Draw "eyes"
+                        ctx.beginPath();
+                        ctx.arc(
+                            enemy.x + enemy.width * 0.3,
+                            enemy.y + enemy.height * 0.3,
+                            enemy.width / 10,
+                            0,
+                            Math.PI * 2
+                        );
+                        ctx.fill();
+                        
+                        ctx.beginPath();
+                        ctx.arc(
+                            enemy.x + enemy.width * 0.7,
+                            enemy.y + enemy.height * 0.3,
+                            enemy.width / 10,
+                            0,
+                            Math.PI * 2
+                        );
+                        ctx.fill();
+                        break;
+                        
+                    case ENEMY_TYPES.SPLITTER:
+                        // Splitter enemy (hexagon)
+                        const centerX = enemy.x + enemy.width / 2;
+                        const centerY = enemy.y + enemy.height / 2;
+                        const radius = enemy.width / 2;
+                        
+                        ctx.beginPath();
+                        for (let i = 0; i < 6; i++) {
+                            const angle = i * Math.PI / 3;
+                            const x = centerX + radius * Math.cos(angle);
+                            const y = centerY + radius * Math.sin(angle);
+                            
+                            if (i === 0) {
+                                ctx.moveTo(x, y);
+                            } else {
+                                ctx.lineTo(x, y);
+                            }
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Draw split lines
+                        ctx.strokeStyle = '#000';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(centerX, centerY - radius * 0.5);
+                        ctx.lineTo(centerX, centerY + radius * 0.5);
+                        ctx.stroke();
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(centerX - radius * 0.5, centerY);
+                        ctx.lineTo(centerX + radius * 0.5, centerY);
+                        ctx.stroke();
+                        break;
+                        
+                    case ENEMY_TYPES.ARMORED:
+                        // Armored enemy (octagon with shield)
+                        const armorCenterX = enemy.x + enemy.width / 2;
+                        const armorCenterY = enemy.y + enemy.height / 2;
+                        const armorRadius = enemy.width / 2;
+                        
+                        // Draw octagon
+                        ctx.beginPath();
+                        for (let i = 0; i < 8; i++) {
+                            const angle = i * Math.PI / 4;
+                            const x = armorCenterX + armorRadius * Math.cos(angle);
+                            const y = armorCenterY + armorRadius * Math.sin(angle);
+                            
+                            if (i === 0) {
+                                ctx.moveTo(x, y);
+                            } else {
+                                ctx.lineTo(x, y);
+                            }
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Draw armor plates
+                        ctx.strokeStyle = '#000';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.arc(
+                            armorCenterX,
+                            armorCenterY,
+                            armorRadius * 0.7,
+                            0,
+                            Math.PI * 2
+                        );
+                        ctx.stroke();
+                        
+                        // Draw health indicator
+                        const healthPercentage = enemy.health / ENEMY_SETTINGS[ENEMY_TYPES.ARMORED].health;
+                        ctx.fillStyle = enemy.health > 1 ? '#00FF00' : '#FF0000';
+                        ctx.fillRect(
+                            enemy.x + enemy.width * 0.25,
+                            enemy.y + enemy.height * 0.8,
+                            enemy.width * 0.5 * healthPercentage,
+                            enemy.height * 0.1
+                        );
+                        break;
+                }
+            });
+        }
+        
+        function drawPowerUps() {
+            powerUps.forEach(powerUp => {
+                // Draw power-up background
+                ctx.fillStyle = powerUp.color;
                 ctx.beginPath();
                 ctx.arc(
-                    enemy.x + enemy.width / 2,
-                    enemy.y + enemy.height / 2,
-                    enemy.width / 5,
+                    powerUp.x + powerUp.width / 2,
+                    powerUp.y + powerUp.height / 2,
+                    powerUp.width / 2,
                     0,
                     Math.PI * 2
                 );
                 ctx.fill();
+                
+                // Draw power-up symbol
+                ctx.fillStyle = 'white';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(
+                    powerUp.symbol,
+                    powerUp.x + powerUp.width / 2,
+                    powerUp.y + powerUp.height / 2
+                );
             });
         }
         
@@ -1078,11 +2141,23 @@
                 lastEnemySpawn = Date.now();
                 lastFrameTime = 0;
                 lastSaveTime = Date.now();
+                lastPowerUpSpawn = Date.now();
+                gameTime = 0;
+                
+                // Reset power-ups
+                activePowerUps.shield.active = false;
+                activePowerUps.rapidFire.active = false;
+                activePowerUps.multiShot.active = false;
+                player.shootCooldown = player.originalShootCooldown;
+                
+                // Clear power-up indicators
+                powerUpIndicators.innerHTML = '';
                 
                 // Update UI
                 scoreElement.textContent = score;
                 livesElement.textContent = lives;
                 gameOverElement.style.display = 'none';
+                updateEnemyTypeIndicators();
                 
                 // Reset player position - always above controls
                 player.x = canvas.width / 2;
@@ -1090,8 +2165,10 @@
                 
                 // Clear all game objects
                 bullets.length = 0;
+                enemyBullets.length = 0;
                 enemies.length = 0;
                 explosions.length = 0;
+                powerUps.length = 0;
                 
                 // Restart the game loop
                 startGame();
@@ -1111,11 +2188,18 @@
                 const deltaTime = Math.min((timestamp - lastFrameTime) / 1000, 0.1); // convert to seconds, cap at 0.1
                 lastFrameTime = timestamp;
                 
+                // Update game time
+                gameTime += deltaTime;
+                
                 // Auto-save game state
                 if (settings.autoSave && Date.now() - lastSaveTime > saveInterval) {
                     saveGameState();
                     lastSaveTime = Date.now();
                 }
+                
+                // Update power-ups
+                updatePowerUps();
+                updatePowerUpIndicators();
                 
                 // Clear canvas
                 ctx.fillStyle = '#000022';
@@ -1127,13 +2211,17 @@
                 // Update game objects
                 updatePlayer(deltaTime);
                 updateBullets(deltaTime);
+                updateEnemyBullets(deltaTime);
                 updateEnemies(deltaTime);
+                updatePowerUpObjects(deltaTime);
                 updateExplosions(deltaTime);
                 
                 // Draw game objects
                 drawPlayer();
                 drawBullets();
+                drawEnemyBullets();
                 drawEnemies();
+                drawPowerUps();
                 drawExplosions();
                 
                 // Continue game loop
@@ -1148,6 +2236,9 @@
                 // Initialize game state
                 gameActive = true;
                 lastFrameTime = 0;
+                
+                // Initialize enemy type indicators
+                updateEnemyTypeIndicators();
                 
                 // Start the game loop
                 animationFrameId = requestAnimationFrame(gameLoop);
